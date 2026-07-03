@@ -29,7 +29,17 @@ function load() {
   data.docs = data.docs || [];
   data.hwpxTemplate = data.hwpxTemplate || null;
 }
-function save() { localSave(); if (!syncReady || !USE_FIREBASE) return; saveAllToCloud() }
+
+function save() {
+  localSave();
+
+  if (!USE_FIREBASE || !auth || !auth.currentUser) return;
+
+  saveAllToCloud().catch(err => {
+    console.error('Firestore 저장 실패:', err);
+    alert('Firebase 저장 실패: ' + err.message);
+  });
+}
 
 function ownerKey() { return data.uid || data.user }
 
@@ -218,10 +228,17 @@ async function logout() {
 async function setUser() {
   let n = $('userName').value.trim();
   if (!n) return alert('이름을 입력하세요.');
+
   data.user = n;
   localSave();
-  await ensureCloudUser(n);
-  init();
+
+  if (USE_FIREBASE && auth.currentUser) {
+    await ensureCloudUser(n);
+  }
+
+  $('who').innerText = data.user + (USE_FIREBASE ? ' / 실시간 동기화' : ' / Firebase 설정 필요');
+
+  alert('사용자 이름을 저장했습니다.');
 }
 
 function tab(id, btn) {
