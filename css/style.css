@@ -1,0 +1,422 @@
+* {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, 'Malgun Gothic', sans-serif;
+      background: #f4f6f8;
+      color: #111827
+    }
+
+    header {
+      background: #12355b;
+      color: white;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0 0 4px
+    }
+
+    main {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 12px
+    }
+
+    nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      position: sticky;
+      top: 62px;
+      background: #f4f6f8;
+      padding: 10px 0;
+      z-index: 19
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 13px;
+      margin: 4px 4px 4px 0;
+      font-weight: 700
+    }
+
+    .p {
+      background: #12355b;
+      color: white
+    }
+
+    .s {
+      background: #e9eef5
+    }
+
+    .g {
+      background: #e8f7ec;
+      color: #17663a
+    }
+
+    .d {
+      background: #ffe7e7;
+      color: #7a1111
+    }
+
+    nav button {
+      background: white;
+      border: 1px solid #d8dee8;
+      border-radius: 20px;
+      white-space: nowrap
+    }
+
+    nav button.active {
+      background: #12355b;
+      color: white
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 10px #0001;
+      border: 1px solid #eef0f4
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px
+    }
+
+    .grid4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px
+    }
+
+    @media(max-width:850px) {
+
+      .grid,
+      .grid3,
+      .grid4 {
+        grid-template-columns: 1fr
+      }
+
+      header h1 {
+        font-size: 16px
+      }
+
+      nav {
+        top: 56px
+      }
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 0 0 10px
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin: 8px 0 5px;
+      font-size: 14px
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #cdd3dd;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 15px;
+      background: white
+    }
+
+    input[type=checkbox] {
+      width: auto;
+      margin-right: 6px;
+      transform: scale(1.15)
+    }
+
+    textarea {
+      min-height: 80px
+    }
+
+    .small {
+      font-size: 12px;
+      color: #5f6b7a;
+      line-height: 1.55
+    }
+
+    .notice {
+      background: #fff8e6;
+      border: 1px solid #ffd38a;
+      padding: 10px;
+      border-radius: 10px
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .cal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .cal {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px
+    }
+
+    .dayname {
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px
+    }
+
+    .cell {
+      min-height: 108px;
+      background: white;
+      border: 1px solid #d8dee8;
+      border-radius: 10px;
+      padding: 6px;
+      cursor: pointer
+    }
+
+    .cell.other {
+      opacity: .42;
+      background: #f8fafc
+    }
+
+    .date {
+      font-weight: 700;
+      font-size: 13px
+    }
+
+    .event {
+      font-size: 12px;
+      padding: 4px 5px;
+      border-radius: 7px;
+      margin: 3px 0;
+      background: #e8f1ff;
+      line-height: 1.25
+    }
+
+    .event.trip {
+      background: #fff0dc
+    }
+
+    .event.check {
+      background: #e7f7ed
+    }
+
+    .event.work {
+      background: #f1e8ff
+    }
+
+    .event.report {
+      background: #ffe7e7
+    }
+
+    #login,
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: #0008;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px
+    }
+
+    #login.hidden,
+    #modal.hidden {
+      display: none !important
+    }
+
+    #login .box,
+    #modal .box {
+      background: white;
+      border-radius: 16px;
+      max-width: 740px;
+      width: 100%;
+      max-height: 92vh;
+      overflow: auto;
+      padding: 20px;
+      box-shadow: 0 10px 30px #0005
+    }
+
+    .reportbox {
+      background: white;
+      border: 1px solid #d8dee8;
+      border-radius: 12px;
+      padding: 20px;
+      line-height: 1.68
+    }
+
+    .reportbox h1 {
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 5px
+    }
+
+    .reportbox h2 {
+      border-left: 5px solid #111;
+      padding-left: 8px;
+      margin-top: 20px
+    }
+
+    .indent {
+      display: block;
+      margin-left: 18px
+    }
+
+    .trip-page,
+    .photo-page {
+      width: 100%;
+      max-width: 794px;
+      margin: 0 auto;
+      background: white;
+      padding: 22px 24px;
+      min-height: 1122px
+    }
+
+    .trip-title {
+      text-align: center;
+      font-size: 25px;
+      letter-spacing: 8px;
+      margin: 0 0 22px
+    }
+
+    .trip-one {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      border: 2px solid #000
+    }
+
+    .trip-one th,
+    .trip-one td {
+      border: 1px solid #000;
+      padding: 8px;
+      vertical-align: middle
+    }
+
+    .trip-one th {
+      background: #f6f6f6
+    }
+
+    .bodycell {
+      height: 92px;
+      vertical-align: top !important;
+      line-height: 1.8
+    }
+
+    .center {
+      text-align: center
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 2px solid #000;
+      border-bottom: 0
+    }
+
+    .photo-card {
+      border-right: 1px solid #000;
+      border-bottom: 1px solid #000;
+      text-align: center;
+      min-height: 250px;
+      padding: 8px
+    }
+
+    .photo-card:nth-child(2n) {
+      border-right: 0
+    }
+
+    .photo-card img {
+      max-width: 100%;
+      max-height: 225px
+    }
+
+    .cap {
+      border-top: 1px solid #000;
+      margin: 8px -8px -8px;
+      padding: 8px
+    }
+
+    .preview {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px
+    }
+
+    .preview div {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 5px
+    }
+
+    .preview img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover
+    }
+
+    #printRoot {
+      display: none
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm
+      }
+
+      body {
+        background: white
+      }
+
+      header,
+      nav,
+      main,
+      #login,
+      #modal {
+        display: none !important
+      }
+
+      #printRoot {
+        display: block !important
+      }
+
+      .trip-page,
+      .photo-page {
+        page-break-after: always;
+        padding: 0;
+        min-height: auto
+      }
+
+      .photo-page {
+        page-break-before: always
+      }
+    }
