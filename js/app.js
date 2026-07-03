@@ -1,8 +1,32 @@
 const KEY = 'ys_aton_calendar_v12_firebase';
-let data = {users: [], user: '', uid: '', events: [], docs: [], hwpxTemplate: null };
-let month = new Date(), photos = [];
-let auth = null, db = null, unsbuEvents = null, unsubDocs = null,unsubTemplate = null, unsubUsers = null, syncReady = false;
+
+let data = {
+  users: [],
+  user: '',
+  uid: '',
+  events: [],
+  docs: [],
+  hwpxTemplate: null
+};
+
+let month = new Date();
+let photos = [];
+
+let auth = null;
+let db = null;
+
+let unsubEvents = null;
+let unsubDocs = null;
+let unsubTemplate = null;
+let unsubUsers = null;
+
+let syncReady = false;
+
 const $ = id => document.getElementById(id);
+
+function uid() {
+  return 'id_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+}
 
 const USE_FIREBASE = !!(window.firebase && window.firebaseConfig && window.firebaseConfig.apiKey && !String(window.firebaseConfig.apiKey).includes('여기에'));
 
