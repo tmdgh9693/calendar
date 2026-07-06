@@ -17,10 +17,10 @@
       top: 0;
       z-index: 20
       }
-
+/* 
       header{
         transition:background 0.3s ease;
-      }
+      } */
     body.theme-personal header {
       background: #2563eb;
     }
