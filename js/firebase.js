@@ -195,14 +195,25 @@ function startRealtime() {
     });
 
   unsubUsers = db
-    .collection('users')
-    .onSnapshot(snapshot => {
-      data.users = snapshot.docs
-        .map(doc => doc.data().name)
-        .filter(Boolean);
+  .collection('users')
+  .onSnapshot(snapshot => {
+    data.users = [];
+    data.userColors = {};
+
+    snapshot.docs.forEach(doc => {
+        const user = doc.data();
+
+        if (user.name) {
+            data.users.push(user.name);
+        }
+
+        if (user.uid && user.color) {
+            data.userColors[user.uid] = user.color;
+        }
     });
 
-  syncReady = true;
+    render();
+  });
 }
 
 function stopRealtime() {
