@@ -407,6 +407,13 @@
           <label>현재 사용자</label>
           <input id="userName">
 
+          <label>내 일정 표시 색상</label>
+          <div class="color-setting-row">
+            <input id="userColor" type="color" value="#2563eb">
+            <button class="p" onclick="saveUserColor()">색상 저장</button>
+          </div>
+          <p class="small">이 색상은 과 캘린더에서 내가 만든 일정 표시색으로 사용됩니다.</p>
+
           <button class="p" onclick="setUser()">사용자 이름 저장</button>
           <button class="s" onclick="logout()">로그아웃</button>
           <button class="s" onclick="sample()">테스트용 샘플자료 넣기</button>
