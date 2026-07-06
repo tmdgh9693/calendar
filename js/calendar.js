@@ -77,6 +77,10 @@ function readEvent() {
     scope,
     owner: scope === '개인' ? data.user : '과',
     ownerUid: scope === '개인' ? ownerKey() : 'dept',
+    creatorUid: ownerKey(),
+    creatorName: data.user,
+    sourceOwnerUid: scope === '과' ? ownerKey() : null,
+    sourceOwner: scope === '과' ? data.user : null,
     visibleTo: scope === '개인' ? [ownerKey()] : ['dept', ownerKey()],
     sourceId: null,
 
@@ -203,8 +207,14 @@ async function deleteEvent() {
 function render() {
   renderCal('개인');
   renderCal('과');
-  tripOptions();
-  renderArchive();
+
+  if (typeof tripOptions === 'function') {
+    tripOptions();
+  }
+
+  if (typeof renderArchive === 'function') {
+    renderArchive();
+  }
 }
 
 function renderCal(scope) {
@@ -253,7 +263,7 @@ function renderCal(scope) {
 
       const ownerColor =
     scope === '과'
-    ? data.userColors?.[event.sourceOwnerUid || event.ownerUid] || ''
+    ? data.userColors?.[event.sourceOwnerUid || event.creatorUid || event.ownerUid] || ''
     : '';
 
     const colorStyle = ownerColor
@@ -265,7 +275,7 @@ function renderCal(scope) {
     ${colorStyle}
     onclick="event.stopPropagation();openEvent('${scope}', '${date}', '${event.id}')">
     <span class="event-owner-dot" style="background:${ownerColor || '#94a3b8'}"></span>
-    ${hm(event)} ${esc(event.person || '')} · ${esc(event.title)}
+    ${hm(event)} ${esc(event.sourceOwner || event.creatorName || event.person || '')} · ${esc(event.title)}
     ${event.meetingInclude ? '●' : ''}
   </div>
 `;
