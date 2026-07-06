@@ -156,6 +156,8 @@ function syncDept(personalEvent) {
     scope: '과',
     owner: '과',
     ownerUid: 'dept',
+    sourceOwnerUid: personalEvent.ownerUid,
+    sourceOwner: personalEvent.owner,
     visibleTo: ['dept', ownerKey()],
     sourceId: personalEvent.id,
     deptReflect: false,
@@ -249,12 +251,24 @@ function renderCal(scope) {
     events.slice(0, 5).forEach(event => {
       const colorClass = eventTypeClass(event.type);
 
-      html += `
-        <div class="event ${colorClass}" onclick="event.stopPropagation();openEvent('${scope}', '${date}', '${event.id}')">
-          ${hm(event)} ${esc(event.title)}
-          ${event.meetingInclude ? '●' : ''}
-        </div>
-      `;
+      const ownerColor =
+    scope === '과'
+    ? data.userColors?.[event.sourceOwnerUid || event.ownerUid] || ''
+    : '';
+
+    const colorStyle = ownerColor
+     ? `style="border-left:6px solid ${ownerColor}; background:${ownerColor}22;"`
+     : '';
+
+    html += `
+    <div class="event ${colorClass}"
+    ${colorStyle}
+    onclick="event.stopPropagation();openEvent('${scope}', '${date}', '${event.id}')">
+    <span class="event-owner-dot" style="background:${ownerColor || '#94a3b8'}"></span>
+    ${hm(event)} ${esc(event.person || '')} · ${esc(event.title)}
+    ${event.meetingInclude ? '●' : ''}
+  </div>
+`;
     });
 
     if (events.length > 5) {
