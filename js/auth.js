@@ -61,17 +61,21 @@ async function login() {
   init();
 }
 
-async function logout() {
-  if (USE_FIREBASE && auth && auth.currentUser) {
-    await auth.signOut();
-  }
+async function ensureCloudUser(name) {
+    if (!USE_FIREBASE || !auth || !auth.currentUser) return;
 
-  data.user = '';
-  data.uid = '';
+    const color = $('userColor')?.value || '#2563eb';
 
-  stopRealtime();
-  localSave();
-  init();
+    await db
+    .collection('users')
+    .doc(auth.currentUser.uid)
+    .set({
+      uid: auth.currentUser.uid,
+      name,
+      email: auth.currentUser.email || '',
+      color,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
 }
 
 async function setUser() {
