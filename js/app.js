@@ -182,6 +182,7 @@ function init() {
   $('tDate').value = $('tDate').value || today();
   $('tReportDate').value = $('tReportDate').value || today();
   updateMeetingPeriod();
+  document.body.classList.add('theme-personal');
   render();
 }
 
@@ -266,10 +267,40 @@ async function setUser() {
 }
 
 function tab(id, btn) {
-  document.querySelectorAll('.tab').forEach(x => x.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));
   $(id).classList.remove('hidden');
-  document.querySelectorAll('nav button').forEach(x => x.classList.remove('active'));
+
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
   btn.classList.add('active');
+
+  document.body.classList.remove(
+    'theme-personal',
+    'theme-dept',
+    'theme-archive', 
+    'theme-meeting', 
+    'theme-trip', 
+    'theme-settings');
+
+  switch (id) {
+    case "personal":
+      document.body.classList.add('theme-personal');
+      break;
+    case "dept":
+      document.body.classList.add('theme-dept');
+      break;
+    case "archive":
+      document.body.classList.add('theme-archive');
+      break;
+    case "meeting":
+      document.body.classList.add('theme-meeting');
+      break;
+    case "trip":
+      document.body.classList.add('theme-trip');
+      break;
+    case "settings":
+      document.body.classList.add('theme-settings');
+      break;
+  }
   render();
 }
 
