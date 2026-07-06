@@ -194,26 +194,23 @@ function startRealtime() {
       }
     });
 
-  unsubUsers = db
-  .collection('users')
-  .onSnapshot(snapshot => {
-    data.users = [];
-    data.userColors = {};
+  unsubUsers = db.collection('users').onSnapshot(snapshot => {
+  data.users = [];
+  data.userColors = {};
 
-    snapshot.docs.forEach(doc => {
-        const user = doc.data();
+  snapshot.docs.forEach(doc => {
+    const user = doc.data();
 
-        if (user.name) {
-            data.users.push(user.name);
-        }
+    if (user.name) data.users.push(user.name);
+    if (user.uid && user.color) data.userColors[user.uid] = user.color;
 
-        if (user.uid && user.color) {
-            data.userColors[user.uid] = user.color;
-        }
-    });
-
-    render();
+    if (auth.currentUser && user.uid === auth.currentUser.uid && $('userColor')) {
+      $('userColor').value = user.color || '#2563eb';
+    }
   });
+
+  render();
+});
 }
 
 function stopRealtime() {
