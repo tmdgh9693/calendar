@@ -1,6 +1,3 @@
-// js/app.js
-// 앱 최초 실행, 기본값 세팅 담당
-
 function init() {
   load();
 
