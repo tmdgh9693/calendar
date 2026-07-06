@@ -63,6 +63,33 @@ async function clearEvents() {
   alert('일정을 모두 삭제했습니다.');
 }
 
+async function saveUserColor() {
+  const color = $('userColor')?.value || '#2563eb';
+
+  if (!USE_FIREBASE || !auth || !auth.currentUser) {
+    alert('로그인 후 색상을 저장할 수 있습니다.');
+    return;
+  }
+
+  await db
+    .collection('users')
+    .doc(auth.currentUser.uid)
+    .set({
+      uid: auth.currentUser.uid,
+      name: data.user,
+      email: auth.currentUser.email || '',
+      color,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    data.userColors[auth.currentUser.uid] = color;
+
+    render();
+
+    alert('사용자 색상을 저장했습니다.');
+    
+    }
+
 function sample() {
   const now = new Date();
   const ws = weekStart(now);
