@@ -78,6 +78,19 @@ async function ensureCloudUser(name) {
     }, { merge: true });
 }
 
+async function logout() {
+  if (USE_FIREBASE && auth && auth.currentUser) {
+    await auth.signOut();
+  }
+
+  data.user = '';
+  data.uid = '';
+
+  stopRealtime();
+  localSave();
+  init();
+}
+
 async function setUser() {
   const name = $('userName').value.trim();
 
