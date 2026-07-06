@@ -1,137 +1,307 @@
-async function login() {
-  const name = $('loginName').value.trim();
-  const email = $('loginEmail') ? $('loginEmail').value.trim() : '';
-  const password = $('loginPassword') ? $('loginPassword').value : '';
+function moveMonth(direction) {
+  month.setMonth(month.getMonth() + direction);
+  render();
+}
 
-  if (!name) {
-    alert('이름을 입력하세요.');
+function openEvent(scope, date, id = '') {
+  $('modal').classList.remove('hidden');
+  $('evScope').value = scope;
+
+  if (id) {
+    const event = data.events.find(item => item.id === id);
+    fillEvent(event);
     return;
   }
 
-  if (!USE_FIREBASE) {
-    data.user = name;
-    data.uid = name;
-    localSave();
-    init();
+  $('modalTitle').innerText =
+    (scope === '개인' ? '내 일정' : '과 일정') + ' 등록';
 
-    alert('Firebase 설정 전이라 이 브라우저에서만 임시 로그인됩니다.');
-    return;
+  $('evId').value = '';
+  $('evDate').value = date || today();
+  $('evType').value = '출장';
+  $('evPerson').value = scope === '개인' ? data.user : '';
+  $('evTitle').value = '';
+  $('evPlace').value = '';
+
+  $('evDeptReflect').checked = scope === '개인';
+  $('evDeptReflect').disabled = scope === '과';
+
+  $('evMeetingInclude').checked = true;
+  $('evPart').value = '자동';
+  $('evSummary').value = '';
+  $('evResult').value = '';
+  $('evPlan').value = '';
+
+  setHM('evStart', 9, 0);
+  setHM('evEnd', 18, 0);
+}
+
+function closeModal() {
+  $('modal').classList.add('hidden');
+}
+
+function fillEvent(event) {
+  if (!event) return;
+
+  $('modalTitle').innerText =
+    (event.scope === '개인' ? '내 일정' : '과 일정') + ' 수정';
+
+  $('evId').value = event.id;
+  $('evScope').value = event.scope;
+  $('evDate').value = event.date;
+  $('evType').value = event.type;
+  $('evPerson').value = event.person;
+  $('evTitle').value = event.title;
+  $('evPlace').value = event.place;
+
+  $('evDeptReflect').checked = !!event.deptReflect;
+  $('evDeptReflect').disabled = event.scope === '과';
+
+  $('evMeetingInclude').checked = !!event.meetingInclude;
+  $('evPart').value = event.part || '자동';
+  $('evSummary').value = event.summary || '';
+  $('evResult').value = event.result || '';
+  $('evPlan').value = event.plan || '';
+
+  setHM('evStart', event.startH ?? 9, event.startM ?? 0);
+  setHM('evEnd', event.endH ?? 18, event.endM ?? 0);
+}
+
+function readEvent() {
+  const start = getHM('evStart');
+  const end = getHM('evEnd');
+  const scope = $('evScope').value;
+
+  return {
+    id: $('evId').value || uid(),
+    scope,
+    owner: scope === '개인' ? data.user : '과',
+    ownerUid: scope === '개인' ? ownerKey() : 'dept',
+    visibleTo: scope === '개인' ? [ownerKey()] : ['dept', ownerKey()],
+    sourceId: null,
+
+    date: $('evDate').value || today(),
+    startH: start.h,
+    startM: start.m,
+    endH: end.h,
+    endM: end.m,
+
+    type: $('evType').value,
+    person: $('evPerson').value.trim() || (scope === '개인' ? data.user : ''),
+    title: $('evTitle').value.trim() || '제목 없음',
+    place: $('evPlace').value.trim(),
+
+    deptReflect: $('evDeptReflect').checked,
+    meetingInclude: $('evMeetingInclude').checked,
+    part: $('evPart').value,
+
+    summary: $('evSummary').value.trim(),
+    result: $('evResult').value.trim(),
+    plan: $('evPlan').value.trim(),
+
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function saveEvent() {
+  if (!confirm('작성한 일정을 저장하시겠습니까?')) return;
+
+  const event = readEvent();
+  const index = data.events.findIndex(item => item.id === event.id);
+
+  const oldMirrors = data.events
+    .filter(item => item.scope === '과' && item.sourceId === event.id)
+    .map(item => item.id);
+
+  if (USE_FIREBASE && oldMirrors.length) {
+    await Promise.all(oldMirrors.map(id => removeCloud('events', id)));
   }
 
-  if (!email || !password) {
-    alert('이메일과 비밀번호를 입력하세요.');
-    return;
+  if (index >= 0) {
+    data.events[index] = event;
+  } else {
+    data.events.push(event);
   }
 
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-  } catch (error) {
-    console.error('Firebase 로그인 오류:', error);
-
-    if (
-      error.code === 'auth/user-not-found' ||
-      error.code === 'auth/invalid-credential'
-    ) {
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-      } catch (joinError) {
-        console.error('Firebase 회원가입 오류:', joinError);
-        alert('회원가입 오류: ' + joinError.message);
-        return;
-      }
-    } else if (error.code === 'auth/configuration-not-found') {
-      alert('Firebase Authentication에서 이메일/비밀번호 로그인을 사용 설정했는지 확인하세요.');
-      return;
-    } else if (error.code === 'auth/unauthorized-domain') {
-      alert('Firebase Authentication 승인된 도메인에 현재 사이트 주소를 추가하세요.');
-      return;
-    } else {
-      alert('로그인 오류: ' + error.message);
-      return;
-    }
+  if (event.scope === '개인') {
+    syncDept(event);
   }
-
-  data.user = name;
-  data.uid = auth.currentUser.uid;
-
-  await ensureCloudUser(name);
 
   localSave();
-  startRealtime();
-  init();
+
+  if (USE_FIREBASE) {
+    await Promise.all(
+      data.events
+        .filter(item => item.id === event.id || item.sourceId === event.id)
+        .map(item => upsert('events', item))
+    );
+  }
+
+  closeModal();
+  render();
+
+  alert('저장되었습니다.');
 }
 
-async function ensureCloudUser(name) {
-    if (!USE_FIREBASE || !auth || !auth.currentUser) return;
+function syncDept(personalEvent) {
+  data.events = data.events.filter(
+    item => !(item.scope === '과' && item.sourceId === personalEvent.id)
+  );
 
-    const color = $('userColor')?.value || '#2563eb';
+  if (!personalEvent.deptReflect) return;
 
-    await db
-    .collection('users')
-    .doc(auth.currentUser.uid)
-    .set({
-      uid: auth.currentUser.uid,
-      name,
-      email: auth.currentUser.email || '',
-      color,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-}
-
-async function logout() {
-  if (USE_FIREBASE && auth && auth.currentUser) {
-    await auth.signOut();
-  }
-
-  data.user = '';
-  data.uid = '';
-
-  stopRealtime();
-  localSave();
-  init();
-}
-
-async function setUser() {
-  const name = $('userName').value.trim();
-
-  if (!name) {
-    alert('이름을 입력하세요.');
-    return;
-  }
-
-  data.user = name;
-  localSave();
-
-  if (USE_FIREBASE && auth && auth.currentUser) {
-    await ensureCloudUser(name);
-  }
-
-  if ($('who')) {
-    $('who').innerText =
-      data.user + (USE_FIREBASE ? ' / 실시간 동기화' : ' / Firebase 설정 필요');
-  }
-
-  alert('사용자 이름을 저장했습니다.');
-}
-
-function watchAuthState() {
-  if (!USE_FIREBASE || !auth) {
-    init();
-    return;
-  }
-
-  auth.onAuthStateChanged(async user => {
-    if (user) {
-      data.uid = user.uid;
-
-      if (!data.user) {
-        data.user = user.email || '사용자';
-      }
-
-      localSave();
-      startRealtime();
-    }
-
-    init();
+  data.events.push({
+    ...personalEvent,
+    id: uid(),
+    scope: '과',
+    owner: '과',
+    ownerUid: 'dept',
+    sourceOwnerUid: personalEvent.ownerUid,
+    sourceOwner: personalEvent.owner,
+    visibleTo: ['dept', ownerKey()],
+    sourceId: personalEvent.id,
+    deptReflect: false,
+    updatedAt: new Date().toISOString()
   });
+}
+
+async function deleteEvent() {
+  const id = $('evId').value;
+
+  if (!id) {
+    alert('삭제할 일정이 없습니다.');
+    return;
+  }
+
+  if (!confirm('삭제하시겠습니까?')) return;
+
+  const target = data.events.find(item => item.id === id);
+
+  // 개인 일정 삭제 시 연결된 과 일정도 삭제
+  const deleteIds = data.events
+    .filter(item =>
+      item.id === id ||
+      (target && target.scope === '개인' && item.sourceId === id)
+    )
+    .map(item => item.id);
+
+  data.events = data.events.filter(
+    item => !deleteIds.includes(item.id)
+  );
+
+  if (USE_FIREBASE) {
+    await Promise.all(
+      deleteIds.map(id => removeCloud('events', id))
+    );
+  }
+
+  localSave();
+  closeModal();
+  render();
+}
+
+function render() {
+  renderCal('개인');
+  renderCal('과');
+
+  if (typeof tripOptions === 'function') {
+    tripOptions();
+  }
+
+  if (typeof renderArchive === 'function') {
+    renderArchive();
+  }
+}
+
+function renderCal(scope) {
+  const titleEl = scope === '개인' ? $('personalTitle') : $('deptTitle');
+  const calEl = scope === '개인' ? $('personalCal') : $('deptCal');
+
+  if (!titleEl || !calEl) return;
+
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+
+  titleEl.innerText =
+    (scope === '개인' ? '내 캘린더' : '과 캘린더') +
+    ` · ${year}년 ${monthIndex + 1}월`;
+
+  const first = new Date(year, monthIndex, 1);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+
+  let html = ['일', '월', '화', '수', '목', '금', '토']
+    .map(day => `<div class="dayname">${day}</div>`)
+    .join('');
+
+  for (let i = 0; i < 42; i++) {
+    const current = new Date(start);
+    current.setDate(start.getDate() + i);
+
+    const date = localDate(current);
+    const isOtherMonth = current.getMonth() !== monthIndex;
+
+    const events = data.events
+      .filter(event =>
+        event.scope === scope &&
+        event.date === date &&
+        (scope === '과' || mine(event))
+      )
+      .sort(sortEv);
+
+    html += `
+      <div class="cell ${isOtherMonth ? 'other' : ''}" onclick="openEvent('${scope}', '${date}')">
+        <div class="date">${current.getDate()}</div>
+    `;
+
+    events.slice(0, 5).forEach(event => {
+      const colorClass = eventTypeClass(event.type);
+
+      const ownerColor =
+    scope === '과'
+    ? data.userColors?.[event.sourceOwnerUid || event.ownerUid] || ''
+    : '';
+
+    const colorStyle = ownerColor
+     ? `style="border-left:6px solid ${ownerColor}; background:${ownerColor}22;"`
+     : '';
+
+    html += `
+    <div class="event ${colorClass}"
+    ${colorStyle}
+    onclick="event.stopPropagation();openEvent('${scope}', '${date}', '${event.id}')">
+    <span class="event-owner-dot" style="background:${ownerColor || '#94a3b8'}"></span>
+    ${hm(event)} ${esc(event.person || '')} · ${esc(event.title)}
+    ${event.meetingInclude ? '●' : ''}
+  </div>
+`;
+    });
+
+    if (events.length > 5) {
+      html += `<div class="small">+${events.length - 5}건</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  calEl.innerHTML = html;
+}
+
+function eventTypeClass(type) {
+  switch (type) {
+    case '출장':
+      return 'trip';
+    case '점검':
+      return 'check';
+    case '공사':
+      return 'work';
+    case '보고':
+      return 'report';
+    case '회의':
+      return 'meeting-event';
+    case '행사':
+      return 'event-ceremony';
+    default:
+      return '';
+  }
 }
