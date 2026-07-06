@@ -1,150 +1,149 @@
-<!-- 출장복명.html: index.html에서 자동으로 불러오는 화면 파일입니다. -->
 <section id="trip" class="tab hidden">
-      <div class="grid">
-        <div class="card">
-          <h2>
-            출장복명서 작성
-          </h2>
+  <div class="grid">
+    <div class="card">
+      <h2>
+        출장복명서 작성
+      </h2>
+      <label>
+        출장·점검 일정 선택
+      </label>
+      <select id="tripSelect" onchange="loadTrip()">
+
+      </select>
+      <div class="grid3">
+        <div>
           <label>
-            출장·점검 일정 선택
+            출장일자
           </label>
-          <select id="tripSelect" onchange="loadTrip()">
-
-          </select>
-          <div class="grid3">
-            <div>
-              <label>
-                출장일자
-              </label>
-              <input id="tDate" type="date">
-            </div>
-            <div>
-              <label>
-                출발 시
-              </label>
-              <select id="tStartH">
-
-              </select>
-            </div>
-            <div>
-              <label>
-                출발 분
-              </label>
-              <select id="tStartM">
-
-              </select>
-            </div>
-
-          </div>
-
-          </select>
-          <div class="grid3">
-            <div>
-              <label>
-                귀청일자
-              </label>
-              <input id="tDate" type="date">
-            </div>
-            <div>
-              <label>
-                귀청 시
-              </label>
-              <select id="tEndH">
-
-              </select>
-            </div>
-            <div>
-              <label>
-                귀청 분
-              </label>
-              <select id="tEndM">
-
-              </select>
-            </div>
-
-          </div>
-
-            <div class="grid3">
-            <div>
-              <label>
-                복명일
-              </label>
-              <input id="tReportDate" type="date">
-            </div>
-            <div>
-              <label>
-                직급
-              </label>
-              <input id="tRank" value="해양수산">
-            </div>
-            <div>
-              <label>
-                성명
-              </label>
-              <input id="tPerson">
-            </div>
-          </div>
-          <label>
-            출장지
-          </label>
-          <input id="tPlace"><label>
-            출장목적
-          </label>
-          <textarea id="tPurpose">
-
-      </textarea>
-          <label>
-            출장목적 수행상황
-          </label>
-          <textarea id="tBody">
-
-      </textarea>
-          <label>
-            향후계획
-          </label>
-          <textarea id="tPlan">
-
-      </textarea>
-          <label>
-            사진 첨부
-          </label>
-          <input type="file" accept="image/*" multiple onchange="addPhotos(this.files)">
-          <p class="small">
-            스마트폰 사진은 업로드 시 자동 압축됩니다.
-          </p>
-          <div id="photoSizeInfo" class="small">
-
-          </div>
-          <div id="photoPreview" class="preview">
-
-          </div>
-          <button class="s" onclick="clearPhotos()">
-            사진 초기화
-          </button>
-          <hr>
-          <button class="p" onclick="makeTrip()">
-            출장복명서 생성
-          </button>
-          <button class="g" onclick="saveGenerated('출장복명서','tripReport')">
-            생성자료 보관
-          </button>
-          <button class="s" onclick="downloadDoc('tripReport','출장복명서_초안.doc')">
-            한글 열기용 저장
-          </button>
-          <button class="g" onclick="downloadHwpx('tripReport','출장복명서_초안.hwpx','trip')">
-            HWPX 저장
-          </button>
-          <button class="s" onclick="printOnly('tripReport')">
-            생성자료만 인쇄/PDF
-          </button>
+          <input id="tDate" type="date">
         </div>
-        <div class="card">
-          <div id="tripReport" class="reportbox">
-            <section class="trip-page">
-              <h1 class="trip-title">
-                출 장 복 명 서
-              </h1>
-              <p class="small">
-                출장 일정을 선택하거나 내용을 입력한 뒤 생성 버튼을 누르세요.
-              </p>
-            </section>
+        <div>
+          <label>
+            출발 시
+          </label>
+          <select id="tStartH">
+
+          </select>
+        </div>
+        <div>
+          <label>
+            출발 분
+          </label>
+          <select id="tStartM">
+
+          </select>
+        </div>
+
+      </div>
+
+      </select>
+      <div class="grid3">
+        <div>
+          <label>
+            귀청일자
+          </label>
+          <input id="tDate" type="date">
+        </div>
+        <div>
+          <label>
+            귀청 시
+          </label>
+          <select id="tEndH">
+
+          </select>
+        </div>
+        <div>
+          <label>
+            귀청 분
+          </label>
+          <select id="tEndM">
+
+          </select>
+        </div>
+
+      </div>
+
+      <div class="grid3">
+        <div>
+          <label>
+            복명일
+          </label>
+          <input id="tReportDate" type="date">
+        </div>
+        <div>
+          <label>
+            직급
+          </label>
+          <input id="tRank" value="해양수산">
+        </div>
+        <div>
+          <label>
+            성명
+          </label>
+          <input id="tPerson">
+        </div>
+      </div>
+      <label>
+        출장지
+      </label>
+      <input id="tPlace"><label>
+        출장목적
+      </label>
+      <textarea id="tPurpose">
+
+      </textarea>
+      <label>
+        출장목적 수행상황
+      </label>
+      <textarea id="tBody">
+
+      </textarea>
+      <label>
+        향후계획
+      </label>
+      <textarea id="tPlan">
+
+      </textarea>
+      <label>
+        사진 첨부
+      </label>
+      <input type="file" accept="image/*" multiple onchange="addPhotos(this.files)">
+      <p class="small">
+        스마트폰 사진은 업로드 시 자동 압축됩니다.
+      </p>
+      <div id="photoSizeInfo" class="small">
+
+      </div>
+      <div id="photoPreview" class="preview">
+
+      </div>
+      <button class="s" onclick="clearPhotos()">
+        사진 초기화
+      </button>
+      <hr>
+      <button class="p" onclick="makeTrip()">
+        출장복명서 생성
+      </button>
+      <button class="g" onclick="saveGenerated('출장복명서','tripReport')">
+        생성자료 보관
+      </button>
+      <button class="s" onclick="downloadDoc('tripReport','출장복명서_초안.doc')">
+        한글 열기용 저장
+      </button>
+      <button class="g" onclick="downloadHwpx('tripReport','출장복명서_초안.hwpx','trip')">
+        HWPX 저장
+      </button>
+      <button class="s" onclick="printOnly('tripReport')">
+        생성자료만 인쇄/PDF
+      </button>
+    </div>
+    <div class="card">
+      <div id="tripReport" class="reportbox">
+        <section class="trip-page">
+          <h1 class="trip-title">
+            출 장 복 명 서
+          </h1>
+          <p class="small">
+            출장 일정을 선택하거나 내용을 입력한 뒤 생성 버튼을 누르세요.
+          </p>
+        </section>
