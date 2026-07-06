@@ -2,6 +2,7 @@ const KEY = 'ys_aton_calendar_v12_firebase';
 
 let data = {
   users: [],
+  userColors: {},
   user: '',
   uid: '',
   events: [],
@@ -51,7 +52,10 @@ function localSave() {
     KEY,
     JSON.stringify({
       user: data.user,
-      uid: data.uid
+      uid: data.uid,
+      userColors: data.userColors,
+      events: data.events,
+      docs: data.docs,
     })
   );
 }
@@ -62,6 +66,7 @@ function load() {
 
     data.user = saved.user || data.user || '';
     data.uid = saved.uid || data.uid || '';
+    data.userColors = saved.userColors || data.userColors || {};
   } catch (error) {
     console.warn('로컬 저장 데이터 불러오기 실패:', error);
   }
