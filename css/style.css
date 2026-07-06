@@ -16,6 +16,28 @@
       position: sticky;
       top: 0;
       z-index: 20
+      }
+
+      header{
+        transition:background 0.3s ease;
+      }
+    body.theme-personal header {
+      background: #2563eb;
+    }
+    body.theme-dept header {
+      background: #16a34a;
+    }
+    body.theme-meeting header {
+      background: #7c3aed;
+    }
+    body.theme-trip header {
+      background: #f97316;
+    }
+    body.theme-archive header {
+      background: #475569;
+    }
+    body.theme-settings header {
+      background: #0f766e;
     }
 
     header h1 {
@@ -49,7 +71,7 @@
     }
 
     .p {
-      background: #12355b;
+      background: #0011ab;
       color: white
     }
 
