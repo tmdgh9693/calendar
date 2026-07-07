@@ -248,57 +248,66 @@ function rebuildSectionXml(xml, lines) {
 async function downloadHwpx(sourceId, filename, kind) {
   try {
     if (!window.JSZip) {
-      alert('HWPX 저장에 필요한 JSZip을 불러오지 못했습니다. 인터넷 연결 상태를 확인하세요.');
+      alert('HWPX 저장에 필요한 JSZip을 불러오지 못했습니다.');
       return;
     }
 
     if (!data.hwpxTemplate) {
-      alert('먼저 설정·백업 메뉴에서 HWPX 템플릿 파일(.hwpx)을 등록하세요.');
+      alert('먼저 HWPX 템플릿 파일을 등록하세요.');
       return;
     }
 
-    const zip = await JSZip.loadAsync(b64ToBuf(data.hwpxTemplate.b64));
+    const zip = await JSZip.loadAsync(
+      b64ToBuf(data.hwpxTemplate.b64)
+    );
 
     const sectionNames = Object.keys(zip.files).filter(name =>
       /^Contents\/section\d+\.xml$/i.test(name)
     );
 
     if (!sectionNames.length) {
-      alert('템플릿에서 Contents/section*.xml을 찾지 못했습니다. 다른 HWPX 템플릿을 등록해 주세요.');
+      alert('템플릿에서 section XML을 찾지 못했습니다.');
       return;
     }
 
     const map = hwpxMap(kind, sourceId);
-    let hasPlaceholder = false;
+    let replacedCount = 0;
 
     for (const sectionName of sectionNames) {
       const xml = await zip.file(sectionName).async('string');
       const replaced = replacePlaceholders(xml, map);
 
+      const parsed = new DOMParser().parseFromString(
+        replaced,
+        'application/xml'
+      );
+
+      if (parsed.querySelector('parsererror')) {
+        throw new Error(
+          `${sectionName} XML 형식이 올바르지 않습니다.`
+        );
+      }
+
       if (replaced !== xml) {
-        hasPlaceholder = true;
+        replacedCount++;
       }
 
       zip.file(sectionName, replaced);
     }
 
-    if (!hasPlaceholder) {
-      const firstSection = sectionNames[0];
-      const xml = await zip.file(firstSection).async('string');
-      const lines = compactHwpxLines(sourceId);
-
-      zip.file(firstSection, rebuildSectionXml(xml, lines));
-
-      for (const otherSection of sectionNames.slice(1)) {
-        zip.file(
-          otherSection,
-          '<?xml version="1.0" encoding="UTF-8"?><hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"></hs:sec>'
-        );
-      }
+    if (replacedCount === 0) {
+      alert(
+        '이 템플릿에는 {{본문}} 또는 필요한 표시값이 없습니다.\n' +
+        '손상 방지를 위해 HWPX 파일을 만들지 않았습니다.'
+      );
+      return;
     }
 
     if (zip.file('Preview/PrvText.txt')) {
-      zip.file('Preview/PrvText.txt', compactHwpxLines(sourceId).join('\n'));
+      zip.file(
+        'Preview/PrvText.txt',
+        compactHwpxLines(sourceId).join('\n')
+      );
     }
 
     const blob = await zip.generateAsync({
@@ -307,18 +316,13 @@ async function downloadHwpx(sourceId, filename, kind) {
     });
 
     const a = document.createElement('a');
-
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
 
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 
-    alert(
-      hasPlaceholder
-        ? 'HWPX 저장 완료: 템플릿 표시값을 치환했습니다.'
-        : 'HWPX 저장 완료: 1페이지용으로 내용을 보정했습니다.'
-    );
+    alert('HWPX 저장이 완료되었습니다.');
   } catch (error) {
     console.error(error);
     alert('HWPX 생성 오류: ' + error.message);
