@@ -1,0 +1,72 @@
+<section id="meeting" class="tab hidden">
+  <div class="grid">
+    <div class="card">
+      <h2>
+        회의자료 생성
+      </h2>
+      <label>
+        회의 구분
+      </label>
+      <select id="mType" onchange="updateMeetingPeriod()">
+        <option value="weekly">
+          주간회의자료
+        </option>
+        <option value="monthly">
+          월간회의자료
+        </option>
+      </select>
+      <div class="notice small" id="periodGuide">
+
+      </div>
+      <label>
+        부서명
+      </label>
+      <input id="mDept" value="항행정보시설과">
+      <label>
+        가져올 일정
+      </label>
+      <select id="mSource">
+        <option value="dept">
+          과 캘린더 기준
+        </option>
+        <option value="dept_personal">
+          과 캘린더 + 내 개인 회의자료 반영 일정
+        </option>
+        <option value="personal">
+          내 개인 회의자료 반영 일정만
+        </option>
+      </select>
+      <label>
+        추가 메모
+      </label>
+      <textarea id="mMemo">
+
+      </textarea>
+      <button class="p" onclick="makeMeeting()">
+        회의자료 생성
+      </button>
+      <button class="g" onclick="saveGenerated('회의자료','meetingReport')">
+        생성자료 보관
+      </button>
+      <button class="s" onclick="downloadDoc('meetingReport','회의자료_초안.doc')">
+        한글 열기용 저장
+      </button>
+      <button class="g" onclick="downloadHwpx('meetingReport','회의자료_초안.hwpx','meeting')">
+        HWPX 저장
+      </button>
+      <button class="s" onclick="printOnly('meetingReport')">
+        생성자료만 인쇄/PDF
+      </button>
+    </div>
+    <div class="card">
+      <div id="meetingReport" class="reportbox">
+        <h1>
+          항행정보시설과
+        </h1>
+        <p class="small">
+          회의자료 생성 버튼을 누르세요.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
