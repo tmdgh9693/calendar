@@ -1,0 +1,151 @@
+// js/trip.js
+// 출장 일정 불러오기, 사진 압축, 출장복명서 생성 담당
+
+function tripOptions() {
+  const select = $('tripSelect');
+  if (!select) return;
+
+  const events = data.events
+    .filter(event => ['출장', '점검', '공사'].includes(event.type) && (event.scope === '과' || mine(event)))
+    .sort(sortEv);
+
+  select.innerHTML = '<option value="">직접 입력 또는 일정 선택</option>' + events.map(event =>
+    `<option value="${event.id}">${esc(event.date)} [${esc(event.scope)}] ${esc(event.title)}</option>`
+  ).join('');
+}
+
+function loadTrip() {
+  const event = data.events.find(item => item.id === $('tripSelect')?.value);
+  if (!event) return;
+
+  $('tDate').value = event.date || today();
+  $('tReportDate').value = event.date || today();
+  $('tStartH').value = event.startH ?? 9;
+  $('tStartM').value = event.startM ?? 0;
+  $('tEndH').value = event.endH ?? 18;
+  $('tEndM').value = event.endM ?? 0;
+  $('tPerson').value = event.person || data.user;
+  $('tPlace').value = event.place || '';
+  $('tPurpose').value = event.summary || event.title || '';
+  $('tBody').value = [event.summary, event.result].filter(Boolean).map(text => '- ' + text).join('\n');
+  $('tPlan').value = event.plan || '';
+}
+
+async function addPhotos(files) {
+  for (const file of files) {
+    const compressed = await compressSmart(file);
+    photos.push({ data: compressed.data, cap: '', original: file.size || 0, compressed: compressed.bytes });
+  }
+  renderPhotos();
+}
+
+function dataBytes(dataUrl) {
+  return Math.round(((dataUrl.split(',')[1] || '').length * 3) / 4);
+}
+
+function kb(size) {
+  return `${Math.max(1, Math.round((size || 0) / 1024)).toLocaleString()}KB`;
+}
+
+function compress(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const reader = new FileReader();
+
+    reader.onload = event => {
+      image.onload = () => {
+        const ratio = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(image.width * ratio);
+        canvas.height = Math.round(image.height * ratio);
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        const data = canvas.toDataURL('image/jpeg', quality);
+        resolve({ data, bytes: dataBytes(data) });
+      };
+      image.onerror = reject;
+      image.src = event.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressSmart(file) {
+  const target = 800 * 1024;
+  let width = 1280;
+  let quality = 0.76;
+  let output = await compress(file, width, quality);
+
+  while (output.bytes > target && quality > 0.48) {
+    quality -= 0.08;
+    output = await compress(file, width, quality);
+  }
+  while (output.bytes > target && width > 900) {
+    width -= 160;
+    output = await compress(file, width, 0.58);
+  }
+  return output;
+}
+
+function renderPhotos() {
+  if (!$('photoPreview') || !$('photoSizeInfo')) return;
+  const original = photos.reduce((sum, photo) => sum + (photo.original || 0), 0);
+  const compressed = photos.reduce((sum, photo) => sum + (photo.compressed || 0), 0);
+  $('photoSizeInfo').innerText = photos.length ? `첨부 ${photos.length}장 / 원본 ${kb(original)} → 압축 후 ${kb(compressed)}` : '';
+
+  $('photoPreview').innerHTML = photos.map((photo, index) => `
+    <div>
+      <img src="${photo.data}" alt="첨부 사진 ${index + 1}">
+      <div class="small">${kb(photo.original)} → ${kb(photo.compressed)}</div>
+      <input placeholder="사진 ${index + 1} 설명" value="${esc(photo.cap)}" oninput="photos[${index}].cap=this.value">
+      <button class="d" onclick="photos.splice(${index},1);renderPhotos()">삭제</button>
+    </div>
+  `).join('');
+}
+
+function clearPhotos() {
+  photos = [];
+  renderPhotos();
+}
+
+function lines(text) {
+  return String(text || '').split(/\n+/).map(line => line.replace(/^[-ㅇ•*]\s*/, '').trim()).filter(Boolean);
+}
+
+function bullets(text) {
+  const items = lines(text);
+  return items.length ? items.map(item => `<p>ㅇ ${esc(item)}</p>`).join('') : '<p>ㅇ 해당사항 없음</p>';
+}
+
+function subs(text) {
+  const items = lines(text);
+  return items.length ? items.map(item => `<p>- ${esc(item)}</p>`).join('') : '<p>- 해당사항 없음</p>';
+}
+
+function makeTrip() {
+  const date = $('tDate').value || today();
+  const reportDate = $('tReportDate').value || date;
+  const person = $('tPerson').value || data.user;
+  const rank = $('tRank').value || '해양수산주사';
+  const place = $('tPlace').value || '';
+
+  const photosHtml = photos.length ? `<section class="photo-page"><h1 class="trip-title">사진대지</h1><div class="photo-grid">${photos.slice(0, 8).map((photo, index) => `<div class="photo-card"><img src="${photo.data}" alt="사진 ${index + 1}"><div class="cap">${esc(photo.cap || `사진 ${index + 1}`)}</div></div>`).join('')}</div></section>` : '';
+
+  $('tripReport').innerHTML = `
+    <section class="trip-page">
+      <h1 class="trip-title">출 장 복 명 서</h1>
+      <table class="trip-one">
+        <colgroup><col style="width:14%"><col style="width:18%"><col style="width:32%"><col style="width:16%"><col style="width:20%"></colgroup>
+        <tr><th>출 장 자</th><td class="center">${esc(person)}</td><td>출발: ${esc(mdate(date))} ${esc(timeText($('tStartH').value, $('tStartM').value))}<br>귀청: ${esc(mdate(date))} ${esc(timeText($('tEndH').value, $('tEndM').value))}</td><td class="center">복명: ${esc(mdate(reportDate))}</td><td class="center">출장지<br>${esc(place)}</td></tr>
+        <tr><th colspan="5" style="text-align:left">1. 출장목적</th></tr>
+        <tr><td colspan="5" class="bodycell">${bullets($('tPurpose').value)}</td></tr>
+        <tr><th colspan="5" style="text-align:left">2. 출장목적 수행상황</th></tr>
+        <tr><td colspan="5" class="bodycell">${subs($('tBody').value)}</td></tr>
+        <tr><th colspan="5" style="text-align:left">3. 향후계획</th></tr>
+        <tr><td colspan="5" class="bodycell">${bullets($('tPlan').value)}</td></tr>
+        <tr><td colspan="5">붙임&nbsp;&nbsp;사진대지 1부. 끝.<br><br><div style="text-align:center">위와 같이 복명함<br>${esc(kdate(reportDate))}</div></td></tr>
+        <tr><td class="center">출장자</td><td colspan="2">${esc(rank)}&nbsp;&nbsp;성명&nbsp;&nbsp;${esc(person)}&nbsp;&nbsp;(인)</td><td class="center">담 당</td><td></td></tr>
+      </table>
+    </section>${photosHtml}
+  `;
+}
