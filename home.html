@@ -264,8 +264,8 @@
 
           <button class="p" onclick="makeMeeting()">회의자료 생성</button>
           <button class="g" onclick="saveGenerated('회의자료', 'meetingReport')">생성자료 보관</button>
-          <button class="s" onclick="downloadDoc('meetingReport', '회의자료_초안.doc')">한글 열기용 저장</button>
-          <button class="g" onclick="downloadHwpx('meetingReport', '회의자료_초안.hwpx', 'meeting')">HWPX 저장</button>
+          <button class="s" onclick="downloadDoc('meetingReport', '회의자료_초안.html')">HTML 저장</button>
+          <button class="g" onclick="downloadHwpx('meetingReport', '회의자료_초안.hwpx', 'meeting')">한글용 저장</button>
           <button class="s" onclick="printOnly('meetingReport')">생성자료만 인쇄/PDF</button>
         </div>
 
@@ -361,8 +361,8 @@
 
           <button class="p" onclick="makeTrip()">출장복명서 생성</button>
           <button class="g" onclick="saveGenerated('출장복명서', 'tripReport')">생성자료 보관</button>
-          <button class="s" onclick="downloadDoc('tripReport', '출장복명서_초안.doc')">한글 열기용 저장</button>
-          <button class="g" onclick="downloadHwpx('tripReport', '출장복명서_초안.hwpx', 'trip')">HWPX 저장</button>
+          <button class="s" onclick="downloadDoc('tripReport', '출장복명서_초안.html')">HTML 저장</button>
+          <button class="g" onclick="downloadHwpx('tripReport', '출장복명서_초안.hwpx', 'trip')">한글용 저장</button>
           <button class="s" onclick="printOnly('tripReport')">생성자료만 인쇄/PDF</button>
         </div>
 
@@ -406,6 +406,13 @@
 
           <label>현재 사용자</label>
           <input id="userName">
+
+          <label>내 일정 표시 색상</label>
+          <div class="color-setting-row">
+            <input id="userColor" type="color" value="#2563eb">
+            <button class="p" onclick="saveUserColor()">색상 저장</button>
+          </div>
+          <p class="small">이 색상은 과 캘린더에서 내가 만든 일정 표시색으로 사용됩니다.</p>
 
           <button class="p" onclick="setUser()">사용자 이름 저장</button>
           <button class="s" onclick="logout()">로그아웃</button>
