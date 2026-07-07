@@ -264,8 +264,8 @@
 
           <button class="p" onclick="makeMeeting()">회의자료 생성</button>
           <button class="g" onclick="saveGenerated('회의자료', 'meetingReport')">생성자료 보관</button>
-          <button class="s" onclick="downloadDoc('meetingReport', '회의자료_초안.html')">HTML 저장</button>
-          <button class="g" onclick="downloadHwpx('meetingReport', '회의자료_초안.hwpx', 'meeting')">한글용 저장</button>
+          <button class="s" onclick="downloadDoc('meetingReport', '회의자료_초안.doc')">한글 열기용 저장</button>
+          <button class="g" onclick="downloadHwpx('meetingReport', '회의자료_초안.hwpx', 'meeting')">HWPX 저장</button>
           <button class="s" onclick="printOnly('meetingReport')">생성자료만 인쇄/PDF</button>
         </div>
 
@@ -361,8 +361,8 @@
 
           <button class="p" onclick="makeTrip()">출장복명서 생성</button>
           <button class="g" onclick="saveGenerated('출장복명서', 'tripReport')">생성자료 보관</button>
-          <button class="s" onclick="downloadDoc('tripReport', '출장복명서_초안.html')">HTML 저장</button>
-          <button class="g" onclick="downloadHwpx('tripReport', '출장복명서_초안.hwpx', 'trip')">한글용 저장</button>
+          <button class="s" onclick="downloadDoc('tripReport', '출장복명서_초안.doc')">한글 열기용 저장</button>
+          <button class="g" onclick="downloadHwpx('tripReport', '출장복명서_초안.hwpx', 'trip')">HWPX 저장</button>
           <button class="s" onclick="printOnly('tripReport')">생성자료만 인쇄/PDF</button>
         </div>
 
@@ -407,15 +407,15 @@
           <label>현재 사용자</label>
           <input id="userName">
 
-          <label>내 일정 표시 색상</label>
-          <div class="color-setting-row">
-            <input id="userColor" type="color" value="#2563eb">
-            <button class="p" onclick="saveUserColor()">색상 저장</button>
-          </div>
-          <p class="small">이 색상은 과 캘린더에서 내가 만든 일정 표시색으로 사용됩니다.</p>
-
           <button class="p" onclick="setUser()">사용자 이름 저장</button>
           <button class="s" onclick="logout()">로그아웃</button>
+
+          <label>내 일정 표시 색상</label>
+          <div class="user-color-row">
+            <input id="userColor" type="color" value="#2563eb" aria-label="내 일정 표시 색상">
+            <button class="p" onclick="saveUserColor()">색상 저장</button>
+          </div>
+          <p class="small">과 캘린더에서 내가 공유한 일정은 이 색의 왼쪽 선과 점으로 표시됩니다.</p>
           <button class="s" onclick="sample()">테스트용 샘플자료 넣기</button>
           <button class="s" onclick="cleanupDuplicates()">중복일정 정리</button>
           <button class="d" onclick="clearEvents()">일정 전체 삭제</button>
@@ -426,18 +426,44 @@
         </div>
 
         <div class="card">
-          <h2>HWPX 템플릿 설정</h2>
+          <h2>HWPX 템플릿·공용 초안</h2>
 
-          <p class="small">
-            한글에서 만든 빈 HWPX 양식을 등록하면 회의자료·출장복명서를 한글 전용 형식으로 저장할 수 있습니다.
+          <div class="notice small">
+            <b>처음 이용하는 사람도 바로 사용 가능</b><br>
+            별도 파일 등록 없이 회의자료·출장복명서의 <b>HWPX 저장</b>을 누르면 알맞은 공용 기본 초안이 자동 적용됩니다.
+          </div>
+
+          <div class="toolbar template-actions">
+            <button class="s" onclick="useBuiltInHwpxTemplate('meeting')">공용 회의자료 초안 선택</button>
+            <button class="s" onclick="useBuiltInHwpxTemplate('trip')">공용 출장복명서 초안 선택</button>
+          </div>
+          <div id="sharedDraftStatus" class="small"></div>
+
+          <p class="small template-downloads">
+            직접 열어 보거나 수정할 때: <a href="./templates/회의자료_빈_템플릿.hwpx" download>회의자료 빈 템플릿 받기</a> ·
+            <a href="./templates/출장복명서_빈_템플릿.hwpx" download>출장복명서 빈 템플릿 받기</a>
           </p>
 
+          <hr>
+          <p class="small">
+            직접 만든 템플릿은 최대 4개까지 등록할 수 있습니다. 등록한 파일은 같은 서비스 사용자도 공용 목록에서 선택할 수 있고, 현재 선택값은 각 사용자 기기에 따로 저장됩니다.
+          </p>
+
+          <label>템플릿 용도</label>
+          <select id="hwpxTemplateKind">
+            <option value="meeting">회의자료용</option>
+            <option value="trip">출장복명서용</option>
+            <option value="both">회의자료·출장복명 공용</option>
+          </select>
+
           <label>HWPX 양식 파일 선택</label>
-          <input type="file" accept=".hwpx" onchange="loadHwpxTemplate(this.files[0])">
+          <input id="hwpxTemplateFile" type="file" accept=".hwpx">
+          <button class="p" onclick="addHwpxTemplate()">선택한 템플릿 등록·공유</button>
 
+          <label>사용할 템플릿 선택</label>
+          <select id="hwpxTemplateSelect" onchange="selectHwpxTemplate(this.value)"></select>
           <div id="hwpxStatus" class="small"></div>
-
-          <button class="s" onclick="clearHwpxTemplate()">등록한 HWPX 양식 삭제</button>
+          <button class="d" onclick="deleteSelectedHwpxTemplate()">선택한 템플릿 삭제</button>
         </div>
 
         <div class="card">
