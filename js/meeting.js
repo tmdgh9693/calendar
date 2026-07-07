@@ -97,8 +97,6 @@ function meetingEventFingerprint(event) {
 }
 
 function dedupeMeetingEvents(list) {
-  // 개인 일정에서 자동 생성된 과 일정은 sourceId로 연결됩니다.
-  // 과 + 내 캘린더를 함께 선택했을 때는 과 일정 1건만 남깁니다.
   const linkedPersonalIds = new Set(
     list
       .filter(event => event.scope === '과' && event.sourceId)
@@ -109,7 +107,6 @@ function dedupeMeetingEvents(list) {
   const fingerprints = new Set();
   const result = [];
 
-  // 연결된 과 일정이 먼저 오도록 해 같은 일정은 과 일정으로 통일합니다.
   const ordered = [...list].sort((a, b) => {
     if (a.scope !== b.scope) return a.scope === '과' ? -1 : 1;
     return sortEv(a, b);
@@ -121,7 +118,6 @@ function dedupeMeetingEvents(list) {
     const sourceKey = event.sourceId || '';
     const fingerprint = meetingEventFingerprint(event);
 
-    // 예전 자료처럼 sourceId가 비어 있어도 날짜·시간·내용이 모두 같으면 한 번만 반영합니다.
     if ((sourceKey && sourceIds.has(sourceKey)) || fingerprints.has(fingerprint)) continue;
 
     if (sourceKey) sourceIds.add(sourceKey);
