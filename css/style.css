@@ -184,20 +184,17 @@ textarea {
   display: none;
 }
 
-/* 사용자별 과 캘린더 색상 설정 */
-.color-setting-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0 10px;
-}
 
-.color-setting-row input[type="color"] {
-  width: 54px;
-  height: 38px;
-  padding: 2px;
-  border: 1px solid #cdd3dd;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
+/* 개인 색상·HWPX 템플릿 선택 UI */
+.user-color-row { display: flex; align-items: center; gap: 8px; }
+.user-color-row input[type="color"] { width: 56px; min-width: 56px; height: 42px; padding: 3px; cursor: pointer; }
+.user-color-row .p { margin: 0; }
+#hwpxTemplateSelect { min-height: 44px; }
+.template-downloads a { font-weight: 700; }
+.event-owner-dot { width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; display: inline-block; }
+.event { display: flex; align-items: center; gap: 4px; }
+@media (max-width: 850px) { .user-color-row { align-items: stretch; } .user-color-row .p { width: auto; } }
+
+/* HWPX 공용 초안 영역 */
+.template-actions { margin: 10px 0 6px; }
+#sharedDraftStatus { margin: 6px 0 10px; line-height: 1.55; }
