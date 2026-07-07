@@ -1,0 +1,66 @@
+@media (max-width: 850px) {
+  .grid,
+  .grid3,
+  .grid4 {
+    grid-template-columns: 1fr;
+  }
+
+  header h1 {
+    font-size: 16px;
+  }
+
+  nav {
+    top: 56px;
+  }
+
+  .cal {
+    gap: 3px;
+  }
+
+  .cell {
+    min-height: 88px;
+    padding: 5px;
+  }
+
+  .event {
+    font-size: 11px;
+  }
+
+  .preview {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: white;
+  }
+
+  header,
+  nav,
+  main,
+  #login,
+  #modal {
+    display: none !important;
+  }
+
+  #printRoot {
+    display: block !important;
+  }
+
+  .trip-page,
+  .photo-page {
+    page-break-after: always;
+    padding: 0;
+    min-height: auto;
+  }
+
+  .photo-page {
+    page-break-before: always;
+  }
+}
