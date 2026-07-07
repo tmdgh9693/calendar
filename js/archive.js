@@ -276,75 +276,33 @@ async function deleteDoc(id) {
 
 function downloadDoc(id, filename) {
   const target = $(id);
-
   if (!target) return;
 
-  const content = target.innerHTML;
+  let content = target.innerHTML;
 
   content = content
-  .replace(/<script[\s\S]*?<\/script>/gi, '')
-  .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-  .replace(/https:\/\/www\.googletagmanager\.com[^"'<> ]*/gi, '');
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
 
   const css = `
     <style>
-      body {
-        font-family: Malgun Gothic, Arial;
-        line-height: 1.7;
-      }
-
-      .trip-one {
-        border-collapse: collapse;
-        width: 100%;
-        border: 2px solid #000;
-      }
-
-      .trip-one th,
-      .trip-one td {
-        border: 1px solid #000;
-        padding: 8px;
-      }
-
-      .photo-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        border: 2px solid #000;
-      }
-
-      .photo-card {
-        border: 1px solid #000;
-        text-align: center;
-        padding: 8px;
-      }
-
-      .photo-card img {
-        max-width: 100%;
-        max-height: 240px;
-      }
+      body{font-family:Malgun Gothic,Arial;line-height:1.7}
+      .trip-one{border-collapse:collapse;width:100%;border:2px solid #000}
+      .trip-one th,.trip-one td{border:1px solid #000;padding:8px}
+      .photo-grid{display:grid;grid-template-columns:1fr 1fr;border:2px solid #000}
+      .photo-card{border:1px solid #000;text-align:center;padding:8px}
+      .photo-card img{max-width:100%;max-height:240px}
     </style>
   `;
 
   const blob = new Blob(
-    [
-      `<!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        ${css}
-      </head>
-      <body>
-        ${content}
-      </body>
-      </html>`
-    ],
-    { type: 'application/msword;charset=utf-8' }
+    [`<!doctype html><html><head><meta charset="utf-8">${css}</head><body>${content}</body></html>`],
+    { type: 'text/html;charset=utf-8' }
   );
 
   const a = document.createElement('a');
-
   a.href = URL.createObjectURL(blob);
-  a.download = filename;
+  a.download = filename.replace('.doc', '.html');
   a.click();
-
   URL.revokeObjectURL(a.href);
 }
