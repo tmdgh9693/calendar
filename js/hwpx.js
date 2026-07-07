@@ -287,8 +287,7 @@ async function downloadHwpx(sourceId, filename, kind) {
 
     if (!hasPlaceholder) {
       alert(
-        '이 템플릿에는 {{본문}} 또는 필요한 표시값이 없습니다.\n' +
-        '손상 방지를 위해 HWPX 파일을 만들지 않았습니다.'
+        '이 템플릿에는 {{본문}} 또는 필요한 표시값이 없습니다'
       );
       return;
     }
@@ -310,7 +309,7 @@ async function downloadHwpx(sourceId, filename, kind) {
 
     URL.revokeObjectURL(a.href);
 
-    alert('HWPX 저장 완료: 템플릿 표시값을 치환했습니다.');
+    alert('HWPX 저장 완료');
   } catch (error) {
     console.error(error);
     alert('HWPX 생성 오류: ' + error.message);
