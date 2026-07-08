@@ -1292,7 +1292,7 @@ async function downloadHwpx(sourceId, filename, kind) {
     const fallbackNotice = usedBundledTripForm
       ? '\n선택된 기존 템플릿에 사진대지 틀이 없어 기본 출장복명서 양식으로 저장했습니다.'
       : '';
-    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.${kind === 'trip' ? ` 사진 ${photoAssets.length}장과 사진대지는 1페이지당 최대 6장씩, 붙임과 사진대지가 같은 페이지에 들어가도록 반영했습니다.` : ''}${fallbackNotice}`);
+    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.');
   } catch (error) {
     console.error(error);
     alert('HWPX 생성 오류: ' + error.message);
