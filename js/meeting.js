@@ -200,20 +200,37 @@ function makeMeeting() {
   `;
 }
 
-
-function setDeptMonthlyPlanDates() {
+function setDeptMeetingDatesByType(type) {
   const now = new Date();
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const nextMonthEnd = monthEnd(nextMonthStart);
 
-  if ($('deptPlanStart')) $('deptPlanStart').value = localDate(nextMonthStart);
-  if ($('deptPlanEnd')) $('deptPlanEnd').value = localDate(nextMonthEnd);
+  if (type === 'weekly') {
+    const thisMonday = weekStart(now);
+    const thisFriday = addDays(thisMonday, 4);
+    const nextMonday = addDays(thisMonday, 7);
+    const nextFriday = addDays(thisMonday, 11);
+
+    if ($('deptResultStart')) $('deptResultStart').value = localDate(thisMonday);
+    if ($('deptResultEnd')) $('deptResultEnd').value = localDate(thisFriday);
+    if ($('deptPlanStart')) $('deptPlanStart').value = localDate(nextMonday);
+    if ($('deptPlanEnd')) $('deptPlanEnd').value = localDate(nextFriday);
+    return;
+  }
+
+  if (type === 'monthly') {
+    const thisMonthStart = monthStart(now);
+    const thisMonthEnd = monthEnd(now);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonthEnd = monthEnd(nextMonthStart);
+
+    if ($('deptResultStart')) $('deptResultStart').value = localDate(thisMonthStart);
+    if ($('deptResultEnd')) $('deptResultEnd').value = localDate(thisMonthEnd);
+    if ($('deptPlanStart')) $('deptPlanStart').value = localDate(nextMonthStart);
+    if ($('deptPlanEnd')) $('deptPlanEnd').value = localDate(nextMonthEnd);
+  }
 }
 
 function makeDeptMeetingCustom(type) {
-  if (type === 'monthly') {
-    setDeptMonthlyPlanDates();
-  }
+  setDeptMeetingDatesByType(type);
 
   const resultStart = $('deptResultStart') ? $('deptResultStart').value : '';
   const resultEnd = $('deptResultEnd') ? $('deptResultEnd').value : '';
