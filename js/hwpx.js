@@ -3,8 +3,8 @@ const MAX_LOCAL_HWPX_TEMPLATE_BYTES = 2 * 1024 * 1024;
 const MAX_SHARED_HWPX_TEMPLATE_BYTES = 620 * 1024;
 const HWPX_SELECTION_KEY_PREFIX = 'ys_aton_calendar_hwpx_selection_v1_';
 const DEFAULT_HWPX_TEMPLATE_PATHS = {
-  meeting: './templates/meeting_template.hwpx',
-  trip: './templates/trip_template.hwpx'
+  meeting: './templates/회의자료_서식초안.hwpx',
+  trip: './templates/출장복명서(양식).hwpx'
 };
 
 let hwpxCloudStatus = '';
@@ -132,7 +132,6 @@ function mergeHwpxTemplateLists(localTemplates, remoteTemplates) {
   for (const kind of ['meeting', 'trip']) {
     const byId = new Map();
 
-    // 내 브라우저에서 방금 추가한 초안이 서버 응답 때문에 사라지지 않게 먼저 보관합니다.
     [...local[kind], ...remote[kind]].forEach(template => {
       if (deleted.has(String(template.id))) return;
       if (!byId.has(template.id)) byId.set(template.id, template);
@@ -244,7 +243,7 @@ function applySelectedHwpxTemplate() {
   }
 
   selectHwpxTemplate(id);
-  alert(`${hwpxKindLabel(selectedHwpxKind())}용 템플릿을 선택했습니다.`);
+  alert("템플릿 선택이 완료되었습니다.");
 }
 
 function readFileAsArrayBuffer(file) {
@@ -314,7 +313,7 @@ async function addHwpxTemplateFromFile(file, options = {}) {
     saveStoredHwpxSelections();
     localSave();
     renderHwpxTemplateStatus();
-    alert('이미 등록된 파일입니다. 해당 템플릿을 선택했습니다.');
+    alert("이미 등록된 템플릿입니다.");
     return true;
   }
 
@@ -344,12 +343,11 @@ async function addHwpxTemplateFromFile(file, options = {}) {
     localSave();
     renderHwpxTemplateStatus();
 
-    // 서버 저장 실패와 무관하게 먼저 현재 기기에서는 바로 사용할 수 있어야 합니다.
     saveHwpxTemplatesToCloud().then(() => renderHwpxTemplateStatus());
 
     if ($('hwpxTemplateFile')) $('hwpxTemplateFile').value = '';
 
-    alert(`${hwpxKindLabel(kind)}용 템플릿을 등록하고 선택했습니다.`);
+    alert("템플릿 등록이 완료되었습니다.");
     return true;
   } catch (error) {
     console.error(error);
@@ -369,29 +367,24 @@ function registerSelectedHwpxTemplate() {
 
 async function registerBundledHwpxTemplate() {
   const kind = selectedHwpxKind();
+  const existingDefault = normalizeHwpxTemplates()[kind].find(template => template.isDefault);
+
+  if (existingDefault) {
+    selectHwpxTemplate(existingDefault.id);
+    alert("기본 템플릿 선택이 완료되었습니다.");
+    return;
+  }
 
   try {
     const path = DEFAULT_HWPX_TEMPLATE_PATHS[kind];
-    const filename = path.split('/').pop();
-    const templates = normalizeHwpxTemplates();
-    const currentDefault = templates[kind].find(template =>
-      template.isDefault && template.name === filename
-    );
-
-    if (currentDefault) {
-      selectHwpxTemplate(currentDefault.id);
-      alert('현재 기본 서식 초안을 선택했습니다.');
-      return;
-    }
-
     const response = await fetch(path, { cache: 'no-store' });
+
     if (!response.ok) {
       throw new Error('기본 초안 파일을 찾지 못했습니다. templates 폴더가 사이트에 올라갔는지 확인하세요.');
     }
 
-    // 예전에 등록한 다른 기본 초안은 교체합니다. 직접 등록한 파일은 유지됩니다.
-    templates[kind] = templates[kind].filter(template => !template.isDefault);
     const blob = await response.blob();
+    const filename = path.split('/').pop();
     const file = new File([blob], filename, {
       type: 'application/vnd.hancom.hwp'
     });
@@ -424,9 +417,7 @@ async function clearHwpxTemplate() {
 
   const shared = await saveHwpxTemplatesToCloud();
   renderHwpxTemplateStatus();
-  alert(shared
-    ? '선택한 템플릿을 삭제했습니다.'
-    : '이 기기에서는 템플릿을 삭제했습니다. 서버 삭제가 실패하면 다른 기기에는 남아 있을 수 있습니다.');
+  alert("템플릿 삭제가 완료되었습니다.");
 }
 
 function xmlTextEscape(text) {
@@ -436,7 +427,6 @@ function xmlTextEscape(text) {
       '<': '&lt;',
       '>': '&gt;'
     }[match]))
-    // HWPX의 hp:t 안 줄바꿈은 lineBreak 요소로 넣어야 한글에서 줄이 유지됩니다.
     .replace(/\r?\n/g, '<hp:lineBreak/>');
 }
 
@@ -544,7 +534,7 @@ function hwpxMap(kind, sourceId) {
       $('tStartH')?.value || 9,
       $('tStartM')?.value || 0
     );
-    map['{{귀청}}'] = mdate($('tEndDate')?.value || tripDate) + ' ' + timeText(
+    map['{{귀청}}'] = mdate(tripDate) + ' ' + timeText(
       $('tEndH')?.value || 18,
       $('tEndM')?.value || 0
     );
@@ -554,8 +544,9 @@ function hwpxMap(kind, sourceId) {
     map['{{출장목적}}'] = $('tPurpose')?.value.trim() || 'ㅇ 해당사항 없음';
     map['{{수행상황}}'] = $('tBody')?.value.trim() || 'ㅇ 해당사항 없음';
     map['{{향후계획}}'] = $('tPlan')?.value.trim() || 'ㅇ 해당사항 없음';
-    const hasTripPhotos = Array.isArray(photos) && photos.length > 0;
-    map['{{붙임}}'] = hasTripPhotos ? `붙임  사진대지 ${Math.ceil(photos.length / 6)}부. 끝.` : '끝.';
+    map['{{붙임}}'] = typeof tripAttachmentText === 'function'
+      ? tripAttachmentText()
+      : '끝.';
   }
 
   return map;
@@ -651,7 +642,6 @@ function hwpxEnsureParagraph(doc, cell) {
     paragraph.setAttribute('merged', '0');
     subList.appendChild(paragraph);
   }
-
   return paragraph;
 }
 
@@ -660,7 +650,7 @@ function hwpxCharPrId(paragraph) {
   return run?.getAttribute('charPrIDRef') || '5';
 }
 
-function hwpxInsertRunBeforeLineSeg(paragraph, run) {
+function hwpxInsertRunBeforeLineSeg(doc, paragraph, run) {
   const lineSeg = hwpxFirstChild(paragraph, HWPX_NS.hp, 'linesegarray');
   if (lineSeg) paragraph.insertBefore(run, lineSeg);
   else paragraph.appendChild(run);
@@ -668,43 +658,21 @@ function hwpxInsertRunBeforeLineSeg(paragraph, run) {
 
 function hwpxSetCellText(doc, cell, text) {
   if (!cell) return;
-
   const paragraph = hwpxEnsureParagraph(doc, cell);
-  const subList = hwpxFirstChild(cell, HWPX_NS.hp, 'subList');
-
-  // 양식 안에 원래 들어있던 여러 문단(예: 귀청 :)이 남아 있으면
-  // 새 값 뒤에 겹쳐 보이므로 첫 문단만 남기고 모두 제거합니다.
-  if (subList) {
-    hwpxChildren(subList, HWPX_NS.hp, 'p').forEach(p => {
-      if (p !== paragraph) p.remove();
-    });
-  }
-
   const charPrId = hwpxCharPrId(paragraph);
   hwpxChildren(paragraph, HWPX_NS.hp, 'run').forEach(run => run.remove());
 
   const run = doc.createElementNS(HWPX_NS.hp, 'hp:run');
   run.setAttribute('charPrIDRef', charPrId);
-
-  const textEl = doc.createElementNS(HWPX_NS.hp, 'hp:t');
+  const t = doc.createElementNS(HWPX_NS.hp, 'hp:t');
   const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   lines.forEach((line, index) => {
-    if (index) textEl.appendChild(doc.createElementNS(HWPX_NS.hp, 'hp:lineBreak'));
-    textEl.appendChild(doc.createTextNode(line));
+    if (index) t.appendChild(doc.createElementNS(HWPX_NS.hp, 'hp:lineBreak'));
+    t.appendChild(doc.createTextNode(line));
   });
-
-  run.appendChild(textEl);
-  hwpxInsertRunBeforeLineSeg(paragraph, run);
+  run.appendChild(t);
+  hwpxInsertRunBeforeLineSeg(doc, paragraph, run);
   cell.setAttribute('dirty', '1');
-}
-
-function hwpxSetCellParagraphStyle(cell, paraPrIDRef) {
-  if (!cell) return;
-  const subList = hwpxFirstChild(cell, HWPX_NS.hp, 'subList');
-  if (!subList) return;
-  hwpxChildren(subList, HWPX_NS.hp, 'p').forEach(p => {
-    p.setAttribute('paraPrIDRef', String(paraPrIDRef));
-  });
 }
 
 function hwpxNewId() {
@@ -718,417 +686,201 @@ function hwpxAppendElement(doc, parent, namespace, qname, attrs = {}) {
   return element;
 }
 
-function hwpxCellContentBox(cell) {
-  const size = hwpxFirstChild(cell, HWPX_NS.hp, 'cellSz');
-  const margin = hwpxFirstChild(cell, HWPX_NS.hp, 'cellMargin');
-
-  const width = Number(size?.getAttribute('width') || 22000);
-  const height = Number(size?.getAttribute('height') || 16000);
-  const left = Number(margin?.getAttribute('left') || 0);
-  const right = Number(margin?.getAttribute('right') || 0);
-  const top = Number(margin?.getAttribute('top') || 0);
-  const bottom = Number(margin?.getAttribute('bottom') || 0);
-
-  return {
-    width: Math.max(3000, width - left - right),
-    height: Math.max(3000, height - top - bottom)
-  };
-}
-
-function hwpxFitPictureToCell(cell, asset) {
-  const box = hwpxCellContentBox(cell);
-  const sourceWidth = Math.max(1, Number(asset.pixelWidth || 1));
-  const sourceHeight = Math.max(1, Number(asset.pixelHeight || 1));
-  const fitScale = Math.min(box.width / sourceWidth, box.height / sourceHeight) * 0.98;
-
-  return {
-    width: Math.max(1200, Math.floor(sourceWidth * fitScale)),
-    height: Math.max(1200, Math.floor(sourceHeight * fitScale)),
-    rawWidth: sourceWidth * 100,
-    rawHeight: sourceHeight * 100
-  };
-}
-
-function hwpxNextZOrder(doc) {
-  const max = Array.from(doc.getElementsByTagNameNS(HWPX_NS.hp, 'pic'))
-    .reduce((value, picture) => Math.max(value, Number(picture.getAttribute('zOrder')) || 0), 0);
-  return String(max + 1);
-}
-
-function hwpxPictureElement(doc, asset, box) {
-  const pictureId = hwpxNewId();
+function hwpxPictureElement(doc, binaryId, width, height) {
   const pic = doc.createElementNS(HWPX_NS.hp, 'hp:pic');
-
+  const objectId = hwpxNewId();
   Object.entries({
-    id: pictureId,
-    zOrder: hwpxNextZOrder(doc),
-    numberingType: 'PICTURE',
-    textWrap: 'TOP_AND_BOTTOM',
-    textFlow: 'BOTH_SIDES',
-    lock: '0',
-    dropcapstyle: 'None',
-    href: '',
-    groupLevel: '0',
-    instid: pictureId,
-    reverse: '0'
+    id: objectId, zOrder: '0', numberingType: 'PICTURE', lock: '0',
+    dropcapstyle: 'None', href: '', groupLevel: '0', instid: objectId,
+    textWrap: 'SQUARE', textFlow: 'BOTH_SIDES', reverse: '0'
   }).forEach(([key, value]) => pic.setAttribute(key, value));
 
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:offset', { x: 0, y: 0 });
-  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:orgSz', { width: box.rawWidth, height: box.rawHeight });
-  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:curSz', { width: box.width, height: box.height });
+  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:orgSz', { width, height });
+  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:curSz', { width, height });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:flip', { horizontal: 0, vertical: 0 });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:rotationInfo', {
-    angle: 0,
-    centerX: Math.floor(box.width / 2),
-    centerY: Math.floor(box.height / 2),
-    rotateimage: 1
+    angle: 0, centerX: Math.floor(width / 2), centerY: Math.floor(height / 2), rotateimage: 1
   });
-
   const renderingInfo = hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:renderingInfo');
-  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:transMatrix', {
-    e1: 1, e2: 0, e3: 0, e4: 0, e5: 1, e6: 0
-  });
-  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:scaMatrix', {
-    e1: (box.width / box.rawWidth).toFixed(6), e2: 0, e3: 0,
-    e4: 0, e5: (box.height / box.rawHeight).toFixed(6), e6: 0
-  });
-  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:rotMatrix', {
-    e1: 1, e2: 0, e3: 0, e4: 0, e5: 1, e6: 0
-  });
-
-  hwpxAppendElement(doc, pic, HWPX_NS.hc, 'hc:img', {
-    binaryItemIDRef: asset.binaryId,
-    bright: 0,
-    contrast: 0,
-    effect: 'REAL_PIC',
-    alpha: 0
-  });
+  const matrix = { e1: 1, e2: 0, e3: 0, e4: 0, e5: 1, e6: 0 };
+  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:transMatrix', matrix);
+  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:scaMatrix', matrix);
+  hwpxAppendElement(doc, renderingInfo, HWPX_NS.hc, 'hc:rotMatrix', matrix);
 
   const imgRect = hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:imgRect');
   hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt0', { x: 0, y: 0 });
-  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt1', { x: box.rawWidth, y: 0 });
-  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt2', { x: box.rawWidth, y: box.rawHeight });
-  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt3', { x: 0, y: box.rawHeight });
-
-  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:imgClip', {
-    left: 0, right: box.rawWidth, top: 0, bottom: box.rawHeight
-  });
+  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt1', { x: width, y: 0 });
+  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt2', { x: width, y: height });
+  hwpxAppendElement(doc, imgRect, HWPX_NS.hc, 'hc:pt3', { x: 0, y: height });
+  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:imgClip', { left: 0, right: width, top: 0, bottom: height });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:inMargin', { left: 0, right: 0, top: 0, bottom: 0 });
-  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:imgDim', {
-    dimwidth: box.rawWidth,
-    dimheight: box.rawHeight
+  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:imgDim', { dimwidth: width, dimheight: height });
+  hwpxAppendElement(doc, pic, HWPX_NS.hc, 'hc:img', {
+    binaryItemIDRef: binaryId, bright: 0, contrast: 0, effect: 'REAL_PIC', alpha: 0
   });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:effects');
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:sz', {
-    width: box.width,
-    height: box.height,
-    widthRelTo: 'ABSOLUTE',
-    heightRelTo: 'ABSOLUTE',
-    protect: 0
+    width, height, widthRelTo: 'ABSOLUTE', heightRelTo: 'ABSOLUTE', protect: 0
   });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:pos', {
-    treatAsChar: 1,
-    affectLSpacing: 0,
-    flowWithText: 1,
-    allowOverlap: 0,
-    holdAnchorAndSO: 0,
-    vertRelTo: 'PARA',
-    horzRelTo: 'PARA',
-    vertAlign: 'TOP',
-    horzAlign: 'CENTER',
-    vertOffset: 0,
-    horzOffset: 0
+    treatAsChar: 1, affectLSpacing: 0, flowWithText: 1, allowOverlap: 0,
+    holdAnchorAndSO: 0, vertRelTo: 'PARA', horzRelTo: 'COLUMN',
+    vertAlign: 'TOP', horzAlign: 'LEFT', vertOffset: 0, horzOffset: 0
   });
   hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:outMargin', { left: 0, right: 0, top: 0, bottom: 0 });
-  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:shapeComment').textContent = '출장 사진';
-
+  hwpxAppendElement(doc, pic, HWPX_NS.hp, 'hp:shapeComment');
   return pic;
-}
-
-function hwpxUpdatePictureLineSeg(doc, paragraph, width, height) {
-  let lineSegArray = hwpxFirstChild(paragraph, HWPX_NS.hp, 'linesegarray');
-  if (!lineSegArray) {
-    lineSegArray = doc.createElementNS(HWPX_NS.hp, 'hp:linesegarray');
-    paragraph.appendChild(lineSegArray);
-  }
-
-  let lineSeg = hwpxFirstChild(lineSegArray, HWPX_NS.hp, 'lineseg');
-  if (!lineSeg) {
-    lineSeg = doc.createElementNS(HWPX_NS.hp, 'hp:lineseg');
-    lineSegArray.appendChild(lineSeg);
-  }
-
-  Object.entries({
-    textpos: 0,
-    vertpos: 0,
-    vertsize: height,
-    textheight: height,
-    baseline: Math.floor(height * 0.85),
-    spacing: 600,
-    horzpos: 0,
-    horzsize: width,
-    flags: 393216
-  }).forEach(([key, value]) => lineSeg.setAttribute(key, String(value)));
 }
 
 function hwpxSetCellPicture(doc, cell, asset) {
   if (!cell || !asset) return;
-
   const paragraph = hwpxEnsureParagraph(doc, cell);
-  const subList = hwpxFirstChild(cell, HWPX_NS.hp, 'subList');
-  if (subList) {
-    hwpxChildren(subList, HWPX_NS.hp, 'p').forEach(p => {
-      if (p !== paragraph) p.remove();
-    });
-  }
   const charPrId = hwpxCharPrId(paragraph);
-  const box = hwpxFitPictureToCell(cell, asset);
   hwpxChildren(paragraph, HWPX_NS.hp, 'run').forEach(run => run.remove());
-
   const run = doc.createElementNS(HWPX_NS.hp, 'hp:run');
   run.setAttribute('charPrIDRef', charPrId);
-  run.appendChild(hwpxPictureElement(doc, asset, box));
-  run.appendChild(doc.createElementNS(HWPX_NS.hp, 'hp:t'));
-  hwpxInsertRunBeforeLineSeg(paragraph, run);
-  hwpxUpdatePictureLineSeg(doc, paragraph, box.width, box.height);
+  run.appendChild(hwpxPictureElement(doc, asset.binaryId, asset.width, asset.height));
+  hwpxInsertRunBeforeLineSeg(doc, paragraph, run);
   cell.setAttribute('dirty', '1');
 }
 
-function hwpxDataUrlToBytes(dataUrl) {
-  const match = String(dataUrl || '').match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.*)$/);
-  if (!match) throw new Error('사진 데이터를 읽지 못했습니다.');
-
-  const type = match[1].toLowerCase();
-  const format = type === 'jpeg' ? 'jpg' : type;
-  const binary = atob(match[2]);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
-
-  return { bytes, format };
+function hwpxRemoveTableParagraph(table) {
+  let node = table;
+  while (node && !(node.namespaceURI === HWPX_NS.hp && node.localName === 'p')) node = node.parentNode;
+  if (node?.parentNode) node.parentNode.removeChild(node);
 }
 
-function hwpxImageDimensions(dataUrl) {
+async function hwpxImageDimensions(dataUrl) {
   return new Promise(resolve => {
     const image = new Image();
-    image.onload = () => resolve({
-      width: image.naturalWidth || image.width || 1,
-      height: image.naturalHeight || image.height || 1
-    });
+    image.onload = () => resolve({ width: image.naturalWidth || image.width || 1, height: image.naturalHeight || image.height || 1 });
     image.onerror = () => resolve({ width: 4, height: 3 });
     image.src = dataUrl;
   });
 }
 
+function hwpxDataUrlToBytes(dataUrl) {
+  const match = String(dataUrl || '').match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.*)$/);
+  if (!match) throw new Error('사진 데이터를 읽지 못했습니다.');
+  const type = match[1].toLowerCase();
+  const format = type === 'jpeg' ? 'jpg' : type;
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, format };
+}
+
+function hwpxCropPhotoForSlot(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const sourceWidth = image.naturalWidth || image.width || 1;
+      const sourceHeight = image.naturalHeight || image.height || 1;
+      const targetWidth = 1200;
+      const targetHeight = 900;
+      const targetRatio = targetWidth / targetHeight;
+      const sourceRatio = sourceWidth / sourceHeight;
+
+      let sx = 0;
+      let sy = 0;
+      let sw = sourceWidth;
+      let sh = sourceHeight;
+
+      if (sourceRatio > targetRatio) {
+        sw = sourceHeight * targetRatio;
+        sx = (sourceWidth - sw) / 2;
+      } else if (sourceRatio < targetRatio) {
+        sh = sourceWidth / targetRatio;
+        sy = (sourceHeight - sh) / 2;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, targetWidth, targetHeight);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    };
+    image.onerror = () => reject(new Error('사진을 사진대지 크기로 조정하지 못했습니다.'));
+    image.src = dataUrl;
+  });
+}
+
 async function buildTripPhotoAssets() {
-  const picked = (photos || []);
+  const picked = (photos || []).slice(0, 6);
   const assets = [];
+
+  const slotWidth = 22000;
+  const slotHeight = 16500;
 
   for (let index = 0; index < picked.length; index++) {
     const photo = picked[index];
-    const dimensions = await hwpxImageDimensions(photo.data);
-    const { bytes, format } = hwpxDataUrlToBytes(photo.data);
+    const croppedData = await hwpxCropPhotoForSlot(photo.data);
+    const { bytes } = hwpxDataUrlToBytes(croppedData);
 
     assets.push({
       bytes,
-      format,
-      pixelWidth: dimensions.width,
-      pixelHeight: dimensions.height,
+      format: 'jpg',
+      width: slotWidth,
+      height: slotHeight,
       caption: String(photo.cap || `사진 ${index + 1}`),
       binaryId: ''
     });
   }
-
   return assets;
-}
-
-
-function hwpxAncestor(element, localName) {
-  let current = element;
-  while (current) {
-    if (current.namespaceURI === HWPX_NS.hp && current.localName === localName) return current;
-    current = current.parentNode;
-  }
-  return null;
-}
-
-function hwpxClearPhotoTable(doc, photoTable) {
-  const imageSlots = [[0, 0], [0, 1], [2, 0], [2, 1], [4, 0], [4, 1]];
-  const captionSlots = [[1, 0], [1, 1], [3, 0], [3, 1], [5, 0], [5, 1]];
-  imageSlots.forEach(slot => hwpxSetCellText(doc, hwpxCell(photoTable, slot[0], slot[1]), ''));
-  captionSlots.forEach(slot => hwpxSetCellText(doc, hwpxCell(photoTable, slot[0], slot[1]), ''));
-}
-
-
-function hwpxSetCellSize(cell, width, height) {
-  const size = hwpxFirstChild(cell, HWPX_NS.hp, 'cellSz');
-  if (!size) return;
-  if (width !== null && width !== undefined) size.setAttribute('width', String(width));
-  if (height !== null && height !== undefined) size.setAttribute('height', String(height));
-}
-
-function hwpxSetCellMargins(cell, margin = 90) {
-  const cellMargin = hwpxFirstChild(cell, HWPX_NS.hp, 'cellMargin');
-  if (!cellMargin) return;
-  ['left', 'right', 'top', 'bottom'].forEach(key => cellMargin.setAttribute(key, String(margin)));
-}
-
-function hwpxCompactTripAttachmentTable(table) {
-  if (!table) return;
-  const sz = hwpxFirstChild(table, HWPX_NS.hp, 'sz');
-  if (sz) {
-    sz.setAttribute('width', '47624');
-    sz.setAttribute('height', '2400');
-  }
-  const inMargin = hwpxFirstChild(table, HWPX_NS.hp, 'inMargin');
-  if (inMargin) ['left', 'right', 'top', 'bottom'].forEach(key => inMargin.setAttribute(key, '80'));
-  const widths = [5200, 700, 41724];
-  Array.from(table.getElementsByTagNameNS(HWPX_NS.hp, 'tc')).forEach(cell => {
-    const addr = hwpxFirstChild(cell, HWPX_NS.hp, 'cellAddr');
-    const col = Number(addr?.getAttribute('colAddr') || 0);
-    hwpxSetCellSize(cell, widths[col] || null, 2400);
-    hwpxSetCellMargins(cell, 80);
-  });
-}
-
-function hwpxCompactTripPhotoTable(table) {
-  if (!table) return;
-  const sz = hwpxFirstChild(table, HWPX_NS.hp, 'sz');
-  if (sz) {
-    sz.setAttribute('width', '47624');
-    sz.setAttribute('height', '51000');
-  }
-  const inMargin = hwpxFirstChild(table, HWPX_NS.hp, 'inMargin');
-  if (inMargin) ['left', 'right', 'top', 'bottom'].forEach(key => inMargin.setAttribute(key, '80'));
-  const rowHeights = [15000, 1900, 15000, 1900, 15000, 1900];
-  Array.from(table.getElementsByTagNameNS(HWPX_NS.hp, 'tc')).forEach(cell => {
-    const addr = hwpxFirstChild(cell, HWPX_NS.hp, 'cellAddr');
-    const row = Number(addr?.getAttribute('rowAddr') || 0);
-    hwpxSetCellSize(cell, 23812, rowHeights[row] || 1900);
-    hwpxSetCellMargins(cell, row % 2 === 0 ? 160 : 80);
-  });
-}
-
-function hwpxCompactTripPhotoLayout(attachment, photoTable) {
-  hwpxCompactTripAttachmentTable(attachment);
-  hwpxCompactTripPhotoTable(photoTable);
-}
-
-function hwpxFillPhotoTable(doc, photoTable, chunk, offset) {
-  const imageSlots = [[0, 0], [0, 1], [2, 0], [2, 1], [4, 0], [4, 1]];
-  const captionSlots = [[1, 0], [1, 1], [3, 0], [3, 1], [5, 0], [5, 1]];
-
-  imageSlots.forEach((slot, index) => {
-    const asset = chunk[index];
-    const imageCell = hwpxCell(photoTable, slot[0], slot[1]);
-    const captionCell = hwpxCell(photoTable, captionSlots[index][0], captionSlots[index][1]);
-
-    if (asset) {
-      hwpxSetCellPicture(doc, imageCell, asset);
-      hwpxSetCellText(doc, captionCell, asset.caption || `사진 ${offset + index + 1}`);
-    } else {
-      hwpxSetCellText(doc, imageCell, '');
-      hwpxSetCellText(doc, captionCell, '');
-    }
-
-    // 사진과 사진 설명은 양식 안에서도 가운데 정렬로 고정합니다.
-    hwpxSetCellParagraphStyle(imageCell, '2');
-    hwpxSetCellParagraphStyle(captionCell, '2');
-  });
-}
-
-function hasTripPhotoLayout(sectionXml) {
-  try {
-    const doc = parseHwpxXml(sectionXml, '출장복명서 양식');
-    const tables = Array.from(doc.getElementsByTagNameNS(HWPX_NS.hp, 'tbl'));
-    const [main, attachment, photoTable] = tables;
-    return Boolean(
-      main?.getAttribute('rowCnt') === '5' && main?.getAttribute('colCnt') === '6' &&
-      attachment?.getAttribute('rowCnt') === '1' && attachment?.getAttribute('colCnt') === '3' &&
-      photoTable?.getAttribute('rowCnt') === '6' && photoTable?.getAttribute('colCnt') === '2'
-    );
-  } catch (error) {
-    return false;
-  }
 }
 
 function applyTripFormLayout(sectionXml, map, assets) {
   const doc = parseHwpxXml(sectionXml, '출장복명서');
   const tables = Array.from(doc.getElementsByTagNameNS(HWPX_NS.hp, 'tbl'));
-  const [main, attachment, photoTable] = tables;
+  const main = tables[0];
+  const attachment = tables[1];
+  const photoTable = tables[2];
 
-  if (!hasTripPhotoLayout(sectionXml)) {
+  if (!main || !attachment || !photoTable ||
+      photoTable.getAttribute('rowCnt') !== '6' || photoTable.getAttribute('colCnt') !== '2') {
     return { xml: sectionXml, applied: false };
   }
 
   const by = key => String(map[key] || '');
-
   hwpxSetCellText(doc, hwpxCell(main, 1, 0), by('{{출장자}}'));
-  hwpxSetCellText(doc, hwpxCell(main, 0, 1), `출발: ${by('{{출발}}')}\n귀청: ${by('{{귀청}}')}`);
-  hwpxSetCellText(doc, hwpxCell(main, 0, 3), `복명: ${by('{{복명}}')}`);
+  hwpxSetCellText(doc, hwpxCell(main, 0, 1), `출발 : ${by('{{출발}}')}\n귀청 : ${by('{{귀청}}')}`);
+  hwpxSetCellText(doc, hwpxCell(main, 0, 3), `복명 : ${by('{{복명}}')}`);
   hwpxSetCellText(doc, hwpxCell(main, 1, 5), by('{{출장지}}'));
   hwpxSetCellText(doc, hwpxCell(main, 2, 0), [
     '1. 출장목적', by('{{출장목적}}'), '',
     '2. 출장목적 수행상황', by('{{수행상황}}'), '',
     '3. 향후계획', by('{{향후계획}}'), '',
-    (assets.length ? `붙임  사진대지 ${Math.ceil(assets.length / 6)}부. 끝.` : '끝.'), '',
+    assets.length ? `붙임  사진대지 1부. 끝.` : '끝.', '',
     '위와 같이 복명함', by('{{복명일}}')
   ].join('\n'));
-  hwpxSetCellText(doc, hwpxCell(main, 4, 0), by('{{직급}}'));
-  hwpxSetCellText(doc, hwpxCell(main, 4, 2), `성명  ${by('{{성명}}')}  (인)`);
-  hwpxSetCellText(doc, hwpxCell(main, 3, 4), '과 장');
+  hwpxSetCellText(doc, hwpxCell(main, 4, 2), `${by('{{직급}}')}  성명  ${by('{{성명}}')}  (인)`);
 
-  // 사진이 없으면 본문에는 '끝.'만 남기고 사진대지 표 자체를 제거합니다.
-  // 사진이 있으면 본문에는 '붙임 사진대지 1부. 끝.'을 넣고, 바로 아래 사진대지 표 칸에 사진을 채웁니다.
   if (!assets.length) {
-    [attachment, photoTable].forEach(table => {
-      let paragraph = table;
-      while (paragraph && !(paragraph.namespaceURI === HWPX_NS.hp && paragraph.localName === 'p')) {
-        paragraph = paragraph.parentNode;
+    hwpxRemoveTableParagraph(attachment);
+    hwpxRemoveTableParagraph(photoTable);
+  } else {
+    hwpxSetCellText(doc, hwpxCell(attachment, 0, 0), '붙임');
+    hwpxSetCellText(doc, hwpxCell(attachment, 0, 1), '사진대지 1부');
+    hwpxSetCellText(doc, hwpxCell(attachment, 0, 2), '끝.');
+    const imageSlots = [[0, 0], [0, 1], [2, 0], [2, 1], [4, 0], [4, 1]];
+    const captionSlots = [[1, 0], [1, 1], [3, 0], [3, 1], [5, 0], [5, 1]];
+    imageSlots.forEach((slot, index) => {
+      const asset = assets[index];
+      const imageCell = hwpxCell(photoTable, slot[0], slot[1]);
+      const captionCell = hwpxCell(photoTable, captionSlots[index][0], captionSlots[index][1]);
+      if (asset) {
+        hwpxSetCellPicture(doc, imageCell, asset);
+        hwpxSetCellText(doc, captionCell, asset.caption);
+      } else {
+        hwpxSetCellText(doc, imageCell, '');
+        hwpxSetCellText(doc, captionCell, '');
       }
-      if (paragraph && paragraph.parentNode) paragraph.parentNode.removeChild(paragraph);
     });
-    return { xml: serializeHwpxXml(doc), applied: true };
-  }
-
-  const chunks = [];
-  for (let index = 0; index < assets.length; index += 6) chunks.push(assets.slice(index, index + 6));
-
-  hwpxCompactTripPhotoLayout(attachment, photoTable);
-
-  const attachmentParagraph = hwpxAncestor(attachment, 'p');
-  const photoParagraph = hwpxAncestor(photoTable, 'p');
-
-  // 첫 페이지에는 출장복명서 본문만 보이게 하고, 사진대지는 항상 다음 페이지부터 시작합니다.
-  if (attachmentParagraph) attachmentParagraph.setAttribute('pageBreak', '1');
-  if (photoParagraph) photoParagraph.setAttribute('pageBreak', '0');
-
-  let insertAfter = photoParagraph;
-
-  hwpxSetCellText(doc, hwpxCell(attachment, 0, 0), '붙임');
-  hwpxSetCellText(doc, hwpxCell(attachment, 0, 1), '');
-  hwpxSetCellText(doc, hwpxCell(attachment, 0, 2), chunks.length > 1 ? '사진대지 1' : '사진대지');
-  hwpxFillPhotoTable(doc, photoTable, chunks[0] || [], 0);
-
-  for (let pageIndex = 1; pageIndex < chunks.length; pageIndex++) {
-    if (!attachmentParagraph || !photoParagraph || !insertAfter?.parentNode) break;
-
-    const attachmentClone = attachmentParagraph.cloneNode(true);
-    attachmentClone.setAttribute('pageBreak', '1');
-    const attachmentCloneTable = attachmentClone.getElementsByTagNameNS(HWPX_NS.hp, 'tbl')[0];
-    hwpxCompactTripAttachmentTable(attachmentCloneTable);
-    hwpxSetCellText(doc, hwpxCell(attachmentCloneTable, 0, 0), '붙임');
-    hwpxSetCellText(doc, hwpxCell(attachmentCloneTable, 0, 1), '');
-    hwpxSetCellText(doc, hwpxCell(attachmentCloneTable, 0, 2), `사진대지 ${pageIndex + 1}`);
-
-    const photoClone = photoParagraph.cloneNode(true);
-    const photoCloneTable = photoClone.getElementsByTagNameNS(HWPX_NS.hp, 'tbl')[0];
-    hwpxCompactTripPhotoTable(photoCloneTable);
-    hwpxClearPhotoTable(doc, photoCloneTable);
-    hwpxFillPhotoTable(doc, photoCloneTable, chunks[pageIndex], pageIndex * 6);
-
-    insertAfter.parentNode.insertBefore(attachmentClone, insertAfter.nextSibling);
-    insertAfter.parentNode.insertBefore(photoClone, attachmentClone.nextSibling);
-    insertAfter = photoClone;
   }
 
   return { xml: serializeHwpxXml(doc), applied: true };
@@ -1136,7 +888,6 @@ function applyTripFormLayout(sectionXml, map, assets) {
 
 function addTripImagesToPackage(zip, headerXml, contentHpfXml, assets) {
   if (!assets.length) return { headerXml, contentHpfXml };
-
   const header = parseHwpxXml(headerXml, 'HWPX 헤더');
   const content = parseHwpxXml(contentHpfXml, 'HWPX 목록');
   const refList = header.getElementsByTagNameNS(HWPX_NS.hh, 'refList')[0];
@@ -1149,25 +900,24 @@ function addTripImagesToPackage(zip, headerXml, contentHpfXml, assets) {
     refList.appendChild(binDataList);
   }
 
-  const manifest = content.getElementsByTagNameNS(HWPX_NS.opf, 'manifest')[0];
-  if (!manifest) throw new Error('템플릿 목록에서 manifest를 찾지 못했습니다.');
-
-  const usedIds = new Set();
+  const existingNames = new Set();
   Array.from(binDataList.getElementsByTagNameNS(HWPX_NS.hh, 'binItem')).forEach(item => {
     const name = item.getAttribute('BinData');
-    if (name) usedIds.add(name.replace(/\.[^.]+$/, ''));
+    if (name) existingNames.add(name.replace(/\.[^.]+$/, ''));
   });
+  const manifest = content.getElementsByTagNameNS(HWPX_NS.opf, 'manifest')[0];
+  if (!manifest) throw new Error('템플릿 목록에서 manifest를 찾지 못했습니다.');
   Array.from(manifest.getElementsByTagNameNS(HWPX_NS.opf, 'item')).forEach(item => {
     const id = item.getAttribute('id');
-    if (id) usedIds.add(id);
+    if (id) existingNames.add(id);
   });
 
-  let nextImageNumber = 1;
+  let next = 1;
   const nextBinaryId = () => {
-    while (usedIds.has(`image${nextImageNumber}`)) nextImageNumber++;
-    const id = `image${nextImageNumber}`;
-    usedIds.add(id);
-    nextImageNumber++;
+    while (existingNames.has(`BIN${String(next).padStart(4, '0')}`)) next++;
+    const id = `BIN${String(next).padStart(4, '0')}`;
+    next++;
+    existingNames.add(id);
     return id;
   };
 
@@ -1193,15 +943,8 @@ function addTripImagesToPackage(zip, headerXml, contentHpfXml, assets) {
     binItem.setAttribute('Format', asset.format);
     binDataList.appendChild(binItem);
   });
-
   binDataList.setAttribute('itemCnt', String(binDataList.getElementsByTagNameNS(HWPX_NS.hh, 'binItem').length));
   return { headerXml: serializeHwpxXml(header), contentHpfXml: serializeHwpxXml(content) };
-}
-
-async function loadBundledTripTemplateZip() {
-  const response = await fetch(DEFAULT_HWPX_TEMPLATE_PATHS.trip, { cache: 'no-store' });
-  if (!response.ok) throw new Error('기본 출장복명서 양식을 찾지 못했습니다. templates 폴더를 확인하세요.');
-  return JSZip.loadAsync(await response.arrayBuffer());
 }
 
 async function downloadHwpx(sourceId, filename, kind) {
@@ -1217,34 +960,16 @@ async function downloadHwpx(sourceId, filename, kind) {
     }
 
     const template = selectedHwpxTemplate(kind) || data.hwpxTemplate || null;
-    let zip;
     if (!template?.b64) {
-      if (kind === 'trip') {
-        zip = await loadBundledTripTemplateZip();
-      } else {
-        alert(`${hwpxKindLabel(kind)}용 HWPX 템플릿을 먼저 등록하세요.`);
-        return;
-      }
-    } else {
-      zip = await JSZip.loadAsync(b64ToBuf(template.b64));
-    }
-    let sectionNames = Object.keys(zip.files).filter(name => /^Contents\/section\d+\.xml$/i.test(name));
-    if (!sectionNames.length) {
-      alert('템플릿에서 Contents/section*.xml을 찾지 못했습니다. 다른 HWPX 템플릿을 등록해 주세요.');
+      alert(`${hwpxKindLabel(kind)}용 HWPX 템플릿을 먼저 등록하세요.`);
       return;
     }
 
-    let usedBundledTripForm = false;
-    if (kind === 'trip') {
-      const currentSections = await Promise.all(sectionNames.map(name => zip.file(name).async('string')));
-      const isPhotoForm = currentSections.some(hasTripPhotoLayout);
-
-      // 예전에 등록한 일반 HWPX가 선택돼 있어도 사진대지가 깨지지 않게 기관 양식으로 자동 보정합니다.
-      if (!isPhotoForm) {
-        zip = await loadBundledTripTemplateZip();
-        sectionNames = Object.keys(zip.files).filter(name => /^Contents\/section\d+\.xml$/i.test(name));
-        usedBundledTripForm = true;
-      }
+    const zip = await JSZip.loadAsync(b64ToBuf(template.b64));
+    const sectionNames = Object.keys(zip.files).filter(name => /^Contents\/section\d+\.xml$/i.test(name));
+    if (!sectionNames.length) {
+      alert('템플릿에서 Contents/section*.xml을 찾지 못했습니다. 다른 HWPX 템플릿을 등록해 주세요.');
+      return;
     }
 
     const map = hwpxMap(kind, sourceId);
@@ -1252,11 +977,14 @@ async function downloadHwpx(sourceId, filename, kind) {
     let replacedAny = false;
     let tripLayoutApplied = false;
 
+    if (kind === 'trip' && (photos || []).length > 6) {
+      alert('현재 선택한 출장복명서 양식의 사진대지는 6칸입니다. HWPX에는 앞 6장만 넣고, 7장 이상은 인쇄/PDF 저장에서 모두 확인할 수 있습니다.');
+    }
+
     if (kind === 'trip' && photoAssets.length) {
       const headerFile = zip.file('Contents/header.xml');
       const contentFile = zip.file('Contents/content.hpf');
       if (!headerFile || !contentFile) throw new Error('사진을 넣을 HWPX 헤더 파일을 찾지 못했습니다.');
-
       const packageUpdate = addTripImagesToPackage(
         zip,
         await headerFile.async('string'),
@@ -1288,24 +1016,22 @@ async function downloadHwpx(sourceId, filename, kind) {
     }
 
     if (zip.file('Preview/PrvText.txt')) {
-      const photoNote = kind === 'trip' ? `\n사진대지 ${photoAssets.length}장 첨부` : '';
+      const photoNote = kind === 'trip' && photoAssets.length ? `\n사진 ${photoAssets.length}장 첨부` : '';
       zip.file('Preview/PrvText.txt', compactHwpxLines(sourceId).join('\n') + photoNote);
     }
 
     const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    const link = document.createElement('a');
+    const a = document.createElement('a');
     const objectUrl = URL.createObjectURL(blob);
-    link.href = objectUrl;
-    link.download = filename;
-    link.click();
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 
-    const fallbackNotice = usedBundledTripForm
-      ? '\n선택된 기존 템플릿에 사진대지 틀이 없어 기본 출장복명서 양식으로 저장했습니다.'
-      : '';
-    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.${kind === 'trip' ? ` 사진 ${photoAssets.length}장과 사진대지는 1페이지당 최대 6장씩, 붙임과 사진대지가 같은 페이지에 들어가도록 반영했습니다.` : ''}${fallbackNotice}`);
+    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.${kind === 'trip' && photoAssets.length ? ` 사진 ${photoAssets.length}장도 양식에 넣었습니다.` : ''}`);
   } catch (error) {
     console.error(error);
     alert('HWPX 생성 오류: ' + error.message);
   }
 }
+
