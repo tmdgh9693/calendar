@@ -508,7 +508,7 @@ function hwpxTripPeople() {
   const mainName = $('tPerson')?.value.trim() || data.user || '';
 
   if (mainRank || mainName) {
-    people.push({ rank: mainRank || '해양수산주사', name: mainName });
+    people.push({ rank: mainRank || '해양수산', name: mainName });
   }
 
   document.querySelectorAll('#tripPeopleList .trip-person-row').forEach(row => {
