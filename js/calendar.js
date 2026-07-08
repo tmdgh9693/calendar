@@ -98,7 +98,6 @@ function readEvent() {
     id: $('evId').value || uid(),
     scope,
     owner: scope === '개인' ? data.user : '과',
-    // 과 일정도 실제 작성자 UID를 보관해야 작성자가 수정·삭제할 수 있습니다.
     ownerUid: ownerKey(),
     createdByUid: ownerKey(),
     sourceOwnerUid: scope === '과' ? ownerKey() : '',
@@ -144,7 +143,6 @@ async function saveEvent() {
     .filter(item => item.scope === '과' && item.sourceId === event.id)
     .map(item => item.id);
 
-  // 기존 과 복사본은 화면에서 먼저 제거하고, 서버 삭제는 뒤에서 처리합니다.
   data.events = data.events.filter(item => !oldMirrors.includes(item.id));
 
   if (index >= 0) {
@@ -191,7 +189,6 @@ function syncDept(personalEvent) {
     id: uid(),
     scope: '과',
     owner: '과',
-    // 공유본도 실제 작성자 UID를 유지합니다.
     ownerUid: personalEvent.ownerUid,
     createdByUid: personalEvent.createdByUid || personalEvent.ownerUid,
     sourceOwnerUid: personalEvent.ownerUid,
