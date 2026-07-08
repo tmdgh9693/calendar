@@ -22,8 +22,6 @@ function tripOptions() {
   const sourceIds = new Set();
   const fingerprints = new Set();
 
-  // 개인 일정의 과 캘린더 복사본은 한 번만 보여 줍니다.
-  // 같은 일정이면 과 캘린더 항목을 우선 사용합니다.
   const events = (data.events || [])
     .filter(event =>
       ['출장', '점검', '공사'].includes(event.type) &&
