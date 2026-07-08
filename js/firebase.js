@@ -206,7 +206,6 @@ function startRealtime() {
           trip: shared.trip || []
         };
 
-        // 서버에 아직 반영되지 않은 로컬 초안이 실시간 수신 때문에 사라지지 않게 병합합니다.
         if (typeof mergeHwpxTemplateLists === 'function') {
           data.hwpxTemplates = mergeHwpxTemplateLists(data.hwpxTemplates, remoteTemplates);
         } else {
