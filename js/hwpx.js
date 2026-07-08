@@ -132,6 +132,7 @@ function mergeHwpxTemplateLists(localTemplates, remoteTemplates) {
   for (const kind of ['meeting', 'trip']) {
     const byId = new Map();
 
+    // 내 브라우저에서 방금 추가한 초안이 서버 응답 때문에 사라지지 않게 먼저 보관합니다.
     [...local[kind], ...remote[kind]].forEach(template => {
       if (deleted.has(String(template.id))) return;
       if (!byId.has(template.id)) byId.set(template.id, template);
@@ -343,6 +344,7 @@ async function addHwpxTemplateFromFile(file, options = {}) {
     localSave();
     renderHwpxTemplateStatus();
 
+    // 서버 저장 실패와 무관하게 먼저 현재 기기에서는 바로 사용할 수 있어야 합니다.
     saveHwpxTemplatesToCloud().then(() => renderHwpxTemplateStatus());
 
     if ($('hwpxTemplateFile')) $('hwpxTemplateFile').value = '';
@@ -387,6 +389,7 @@ async function registerBundledHwpxTemplate() {
       throw new Error('기본 초안 파일을 찾지 못했습니다. templates 폴더가 사이트에 올라갔는지 확인하세요.');
     }
 
+    // 예전에 등록한 다른 기본 초안은 교체합니다. 직접 등록한 파일은 유지됩니다.
     templates[kind] = templates[kind].filter(template => !template.isDefault);
     const blob = await response.blob();
     const file = new File([blob], filename, {
@@ -433,6 +436,7 @@ function xmlTextEscape(text) {
       '<': '&lt;',
       '>': '&gt;'
     }[match]))
+    // HWPX의 hp:t 안 줄바꿈은 lineBreak 요소로 넣어야 한글에서 줄이 유지됩니다.
     .replace(/\r?\n/g, '<hp:lineBreak/>');
 }
 
@@ -668,6 +672,8 @@ function hwpxSetCellText(doc, cell, text) {
   const paragraph = hwpxEnsureParagraph(doc, cell);
   const subList = hwpxFirstChild(cell, HWPX_NS.hp, 'subList');
 
+  // 양식 안에 원래 들어있던 여러 문단(예: 귀청 :)이 남아 있으면
+  // 새 값 뒤에 겹쳐 보이므로 첫 문단만 남기고 모두 제거합니다.
   if (subList) {
     hwpxChildren(subList, HWPX_NS.hp, 'p').forEach(p => {
       if (p !== paragraph) p.remove();
@@ -1024,6 +1030,7 @@ function hwpxFillPhotoTable(doc, photoTable, chunk, offset) {
       hwpxSetCellText(doc, captionCell, '');
     }
 
+    // 사진과 사진 설명은 양식 안에서도 가운데 정렬로 고정합니다.
     hwpxSetCellParagraphStyle(imageCell, '2');
     hwpxSetCellParagraphStyle(captionCell, '2');
   });
@@ -1070,6 +1077,8 @@ function applyTripFormLayout(sectionXml, map, assets) {
   hwpxSetCellText(doc, hwpxCell(main, 4, 2), `성명  ${by('{{성명}}')}  (인)`);
   hwpxSetCellText(doc, hwpxCell(main, 3, 4), '과 장');
 
+  // 사진이 없으면 본문에는 '끝.'만 남기고 사진대지 표 자체를 제거합니다.
+  // 사진이 있으면 본문에는 '붙임 사진대지 1부. 끝.'을 넣고, 바로 아래 사진대지 표 칸에 사진을 채웁니다.
   if (!assets.length) {
     [attachment, photoTable].forEach(table => {
       let paragraph = table;
@@ -1089,6 +1098,7 @@ function applyTripFormLayout(sectionXml, map, assets) {
   const attachmentParagraph = hwpxAncestor(attachment, 'p');
   const photoParagraph = hwpxAncestor(photoTable, 'p');
 
+  // 첫 페이지에는 출장복명서 본문만 보이게 하고, 사진대지는 항상 다음 페이지부터 시작합니다.
   if (attachmentParagraph) attachmentParagraph.setAttribute('pageBreak', '1');
   if (photoParagraph) photoParagraph.setAttribute('pageBreak', '0');
 
@@ -1229,6 +1239,7 @@ async function downloadHwpx(sourceId, filename, kind) {
       const currentSections = await Promise.all(sectionNames.map(name => zip.file(name).async('string')));
       const isPhotoForm = currentSections.some(hasTripPhotoLayout);
 
+      // 예전에 등록한 일반 HWPX가 선택돼 있어도 사진대지가 깨지지 않게 기관 양식으로 자동 보정합니다.
       if (!isPhotoForm) {
         zip = await loadBundledTripTemplateZip();
         sectionNames = Object.keys(zip.files).filter(name => /^Contents\/section\d+\.xml$/i.test(name));
@@ -1292,7 +1303,7 @@ async function downloadHwpx(sourceId, filename, kind) {
     const fallbackNotice = usedBundledTripForm
       ? '\n선택된 기존 템플릿에 사진대지 틀이 없어 기본 출장복명서 양식으로 저장했습니다.'
       : '';
-    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.');
+    alert(`${hwpxKindLabel(kind)} HWPX 저장이 완료되었습니다.${kind === 'trip' ? ` 사진 ${photoAssets.length}장과 사진대지는 1페이지당 최대 6장씩, 붙임과 사진대지가 같은 페이지에 들어가도록 반영했습니다.` : ''}${fallbackNotice}`);
   } catch (error) {
     console.error(error);
     alert('HWPX 생성 오류: ' + error.message);
