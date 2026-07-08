@@ -7,7 +7,7 @@ function getTripPeople() {
   const mainName = $('tPerson')?.value.trim() || data.user || '';
 
   if (mainRank || mainName) {
-    people.push({ rank: mainRank || '해양수산주사', name: mainName });
+    people.push({ rank: mainRank || '해양수산', name: mainName });
   }
 
   document.querySelectorAll('#tripPeopleList .trip-person-row').forEach(row => {
@@ -29,7 +29,7 @@ function renderTripPeople() {
   });
 }
 
-function addTripPerson(rank = '', name = '') {
+function addTripPerson(rank = '해양수산', name = '') {
   const list = $('tripPeopleList');
   if (!list) return;
 
@@ -260,7 +260,7 @@ function resetTripForm() {
   if ($('tDate')) $('tDate').value = today();
   if ($('tEndDate')) $('tEndDate').value = today();
   if ($('tReportDate')) $('tReportDate').value = today();
-  if ($('tRank')) $('tRank').value = '해양수산주사';
+  if ($('tRank')) $('tRank').value = '해양수산';
   if ($('tPerson')) $('tPerson').value = '';
   if ($('tPlace')) $('tPlace').value = '';
   if ($('tPurpose')) $('tPurpose').value = '';
