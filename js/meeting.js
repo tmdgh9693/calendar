@@ -200,7 +200,21 @@ function makeMeeting() {
   `;
 }
 
+
+function setDeptMonthlyPlanDates() {
+  const now = new Date();
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonthEnd = monthEnd(nextMonthStart);
+
+  if ($('deptPlanStart')) $('deptPlanStart').value = localDate(nextMonthStart);
+  if ($('deptPlanEnd')) $('deptPlanEnd').value = localDate(nextMonthEnd);
+}
+
 function makeDeptMeetingCustom(type) {
+  if (type === 'monthly') {
+    setDeptMonthlyPlanDates();
+  }
+
   const resultStart = $('deptResultStart') ? $('deptResultStart').value : '';
   const resultEnd = $('deptResultEnd') ? $('deptResultEnd').value : '';
   const planStart = $('deptPlanStart') ? $('deptPlanStart').value : '';
