@@ -16,7 +16,7 @@ function init() {
   if ($('who')) {
     $('who').innerText =
       (data.user || '미로그인') +
-      (USE_FIREBASE ? ' / 실시간 동기화' : ' / Firebase 설정 필요');
+      (USE_FIREBASE ? ' / 실시간 동기화' : ' / 설정 필요');
   }
 
   if ($('userName')) {
@@ -55,20 +55,33 @@ function init() {
     setTheme('personal');
   }
 
-  render();
+  requestAnimationFrame(() => {
+    render();
+  });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (typeof watchAuthState === 'function') {
-    watchAuthState();
-  } else {
-    console.error('로그인 초기화 함수를 찾지 못했습니다. auth.js 파일을 확인하세요.');
-    init();
-  }
-});
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        if (typeof loadSections === "function") {
+            await loadSections();
+        }
+        init();
 
-window.addEventListener("load", () => {
-    requestAnimationFrame(() => {
-        window.dispatchEvent(new Event("resize"));
-    });
+        window.addEventListener("load", () => {
+
+            requestAnimationFrame(() => {
+
+                window.dispatchEvent(new Event("resize"));
+
+                render();
+
+            });
+
+        });
+
+    } catch (e) {
+
+        console.error(e);
+
+    }
 });
