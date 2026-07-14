@@ -2,13 +2,14 @@
   box-sizing: border-box;
 }
 
-/* body {
-  margin: 0;
-  font-family: Arial, 'Malgun Gothic', sans-serif;
-  background: #f4f6f8;
-  color: #111827;
+body{
+    margin:0;
+    min-width:1280px;
+    background:#f4f6f8;
+    color:#111827;
+    font-family:Arial,'Malgun Gothic',sans-serif;
 }
-
+/* 
 main {
   max-width: 1240px;
   margin: 0 auto;
@@ -239,19 +240,24 @@ body.theme-archive .main-header,
 body.theme-settings .main-header,
 .main-header {
   position: relative;
-  top: auto;
-  z-index: 1030;
-  padding: 0;
-  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 90px;
   background: #fff;
   border-bottom: 1px solid #d0d7de;
+  z-index: 1030;
+  overflow: hidden;
 }
 
-.header-bar {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 10px 20px;
+.header-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-height:90px;
+    padding:14px 24px;
+    flex-wrap:nowrap;
 }
 
 .brand-button,
@@ -275,13 +281,14 @@ body.theme-settings .main-header,
 .user-area #who { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #333; }
 .user-area .dropdown-menu { z-index: 2000; }
 
-.app-nav {
-  top: 0 !important;
-  z-index: 1020;
-  display: block;
-  padding: 0;
-  border-bottom: 1px solid #d0d7de;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+.app-nav{
+    display:flex;
+    align-items:center;
+    width:100%;
+    min-height:58px;
+    background:#fff;
+    border-top:1px solid #eef2f7;
+    border-bottom:1px solid #d0d7de;
 }
 .app-nav .container-fluid { justify-content: flex-start; padding: 0 20px; overflow-x: auto; }
 .nav-navy { display: flex; flex-wrap: nowrap; align-items: center; padding: 6px 0; margin: 0; min-width: max-content; }
