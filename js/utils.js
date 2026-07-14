@@ -3,19 +3,17 @@ const KEY = 'ys_aton_calendar_v12_firebase';
 let data = {
   users: [],
   userColors: {},
+  userProfiles: [],
+  userRank: '',
   user: '',
   uid: '',
   events: [],
   docs: [],
-  // 회의자료/출장복명서 템플릿을 따로 보관
   hwpxTemplates: { meeting: [], trip: [] },
-  // 각 용도에서 선택한 템플릿 ID는 개인 기기별로 보관
   hwpxTemplateSelections: { meeting: '', trip: '' },
-  // 실시간 수신 전에 방금 삭제한 항목이 되살아나는 것을 막는 로컬 삭제표시
   deletedEventIds: [],
   deletedDocIds: [],
   deletedHwpxTemplateIds: [],
-  // 예전 단일 템플릿 데이터와의 호환용
   hwpxTemplate: null
 };
 
@@ -64,6 +62,8 @@ function localSave() {
       user: data.user,
       uid: data.uid,
       userColors: data.userColors,
+      userProfiles: data.userProfiles,
+      userRank: data.userRank,
       events: data.events,
       docs: data.docs,
       hwpxTemplates: data.hwpxTemplates,
@@ -84,6 +84,8 @@ function load() {
     data.user = saved.user || data.user || '';
     data.uid = saved.uid || data.uid || '';
     data.userColors = saved.userColors || data.userColors || {};
+    data.userProfiles = saved.userProfiles || data.userProfiles || [];
+    data.userRank = saved.userRank || data.userRank || '';
     data.events = saved.events || data.events || [];
     data.docs = saved.docs || data.docs || [];
     data.hwpxTemplates = saved.hwpxTemplates || data.hwpxTemplates || { meeting: [], trip: [] };
@@ -97,6 +99,8 @@ function load() {
   }
 
   data.users = data.users || [];
+  data.userProfiles = Array.isArray(data.userProfiles) ? data.userProfiles : [];
+  data.userRank = data.userRank || '';
   data.events = data.events || [];
   data.docs = data.docs || [];
   data.hwpxTemplates = data.hwpxTemplates || { meeting: [], trip: [] };
