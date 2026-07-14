@@ -22,6 +22,11 @@ function init() {
   if ($('userName')) {
     $('userName').value = data.user || '';
   }
+  if ($('userRank')) $('userRank').value = data.userRank || '';
+  if ($('loginRank')) $('loginRank').value = data.userRank || '';
+  if ($('tRank') && !$('tRank').value) $('tRank').value = data.userRank || '해양수산';
+  if ($('tPerson') && !$('tPerson').value) $('tPerson').value = data.user || '';
+  if (typeof renderTripUserOptions === 'function') renderTripUserOptions();
 
   const savedColor = data.userColors?.[ownerKey()] || data.userColors?.[data.user] || '#2563eb';
 
