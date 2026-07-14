@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dept-calendar-v5-empty-photo-diagonal';
+const CACHE_NAME = 'dept-calendar-v6-rank-autofill';
 const APP_FILES = [
   './',
   './index.html',
