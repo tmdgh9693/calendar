@@ -71,14 +71,12 @@ async function saveAllToCloud() {
   }
 }
 
-async function ensureCloudUser(name, preferredColor = '') {
+async function ensureCloudUser(name, preferredColor = '', preferredRank = '') {
   if (!USE_FIREBASE || !auth || !auth.currentUser) return;
 
   const userId = auth.currentUser.uid;
   data.userColors = data.userColors || {};
 
-  // 중요: 로그인/새로고침 시 색상 입력칸의 기본값(#2563eb)이
-  // 기존 개인 색상을 덮어쓰지 않도록 서버/로컬에 저장된 색상을 먼저 사용합니다.
   let cloudColor = '';
   try {
     const userSnapshot = await db.collection('users').doc(userId).get();
@@ -91,6 +89,8 @@ async function ensureCloudUser(name, preferredColor = '') {
   const inputColor = String($('userColor')?.value || '').trim();
   const requestedColor = String(preferredColor || '').trim();
   const color = requestedColor || cloudColor || localColor || inputColor || '#2563eb';
+  const rank = String(preferredRank || data.userRank || '').trim();
+  data.userRank = rank;
 
   data.userColors[userId] = color;
   if (name) data.userColors[name] = color;
@@ -104,6 +104,7 @@ async function ensureCloudUser(name, preferredColor = '') {
       name,
       email: auth.currentUser.email || '',
       color,
+      rank,
       updatedAt: new Date().toISOString()
     }, { merge: true });
 }
@@ -248,19 +249,25 @@ function startRealtime() {
   unsubUsers = db.collection('users').onSnapshot(snapshot => {
   const savedColors = { ...(data.userColors || {}) };
   data.users = [];
+  data.userProfiles = [];
   data.userColors = savedColors;
 
   snapshot.docs.forEach(doc => {
-    const user = doc.data();
+    const user = { uid: doc.id, ...doc.data() };
 
-    if (user.name) data.users.push(user.name);
+    if (user.name) {
+      data.users.push(user.name);
+      data.userProfiles.push({ uid: user.uid || doc.id, name: user.name, rank: user.rank || '', color: user.color || '' });
+    }
     if (user.uid && user.color) {
       data.userColors[user.uid] = user.color;
       if (user.name) data.userColors[user.name] = user.color;
     }
 
-    if (auth.currentUser && user.uid === auth.currentUser.uid && $('userColor')) {
-      $('userColor').value = data.userColors[user.uid] || user.color || '#2563eb';
+    if (auth.currentUser && user.uid === auth.currentUser.uid) {
+      data.userRank = user.rank || data.userRank || '';
+      if ($('userColor')) $('userColor').value = data.userColors[user.uid] || user.color || '#2563eb';
+      if ($('userRank')) $('userRank').value = data.userRank;
     }
   });
 
