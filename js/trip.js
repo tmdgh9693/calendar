@@ -1,5 +1,34 @@
 let currentTripEventTitle = '';
 let currentTripCalendarEventId = '';
+function tripUserProfileByName(name) {
+  const key = String(name || '').trim();
+  return (data.userProfiles || []).find(profile => String(profile.name || '').trim() === key) || null;
+}
+
+function renderTripUserOptions() {
+  const datalist = $('tripUserNames');
+  if (!datalist) return;
+  const seen = new Set();
+  datalist.innerHTML = (data.userProfiles || [])
+    .filter(profile => profile && profile.name && !seen.has(profile.name) && seen.add(profile.name))
+    .map(profile => `<option value="${esc(profile.name)}">${esc(profile.rank || '')}</option>`)
+    .join('');
+}
+
+function applyTripRankFromName(nameInput, rankInput) {
+  const profile = tripUserProfileByName(nameInput?.value);
+  if (profile && rankInput) rankInput.value = profile.rank || '';
+  saveTripDraft();
+}
+
+function bindMainTripPersonAutocomplete() {
+  const nameInput = $('tPerson');
+  const rankInput = $('tRank');
+  if (!nameInput || nameInput.dataset.rankAutocomplete === '1') return;
+  nameInput.dataset.rankAutocomplete = '1';
+  ['input', 'change', 'blur'].forEach(type => nameInput.addEventListener(type, () => applyTripRankFromName(nameInput, rankInput)));
+}
+
 const TRIP_DRAFT_KEY = 'ys_aton_calendar_trip_draft_v1';
 
 function saveTripDraft() {
@@ -69,6 +98,8 @@ function bindTripDraftAutosave() {
 
 function initTripDraft() {
   bindTripDraftAutosave();
+  renderTripUserOptions();
+  bindMainTripPersonAutocomplete();
   loadTripDraft();
 }
 
@@ -100,7 +131,7 @@ function renderTripPeople() {
   });
 }
 
-function addTripPerson(rank = '해양수산', name = '', options = {}) {
+function addTripPerson(rank = '', name = '', options = {}) {
   const list = $('tripPeopleList');
   if (!list) return;
 
@@ -114,11 +145,14 @@ function addTripPerson(rank = '해양수산', name = '', options = {}) {
     </div>
     <div>
       <label>성명</label>
-      <input class="trip-person-name" value="${esc(name || '')}" placeholder="성명" oninput="saveTripDraft()">
+      <input class="trip-person-name" list="tripUserNames" value="${esc(name || '')}" placeholder="성명" autocomplete="off">
     </div>
     <button class="d" type="button" onclick="this.closest('.trip-person-row').remove(); renderTripPeople(); saveTripDraft();">삭제</button>
   `;
   list.appendChild(row);
+  const nameInput = row.querySelector('.trip-person-name');
+  const rankInput = row.querySelector('.trip-person-rank');
+  ['input', 'change', 'blur'].forEach(type => nameInput?.addEventListener(type, () => applyTripRankFromName(nameInput, rankInput)));
   renderTripPeople();
 
   if (options.save !== false) saveTripDraft();
@@ -500,7 +534,6 @@ async function calendarPhotoCopies() {
   for (const photo of picked) {
     let imageData = photo.data || '';
 
-    // Firestore 문서 용량 제한에 걸리지 않도록 캘린더 저장용 이미지는 한 번 더 작게 만듭니다.
     if (dataBytes(imageData) > 180 * 1024) {
       imageData = await resizeDataUrlForCalendar(imageData);
     }
