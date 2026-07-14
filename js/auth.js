@@ -1,5 +1,6 @@
 let pendingLoginName = '';
 let pendingLoginColor = '';
+let pendingLoginRank = '';
 let authStateStarted = false;
 
 function isEmailLike(value) {
@@ -32,9 +33,18 @@ async function saveNicknameToProfile(name) {
   }
 }
 
-async function applyNickname(user, preferredName = '', preferredColor = '') {
+async function applyNickname(user, preferredName = '', preferredColor = '', preferredRank = '') {
   const requestedName = String(preferredName || '').trim();
   const savedName = await readSavedNickname(user);
+  let savedRank = '';
+  if (USE_FIREBASE && db && user) {
+    try {
+      const profile = await db.collection('users').doc(user.uid).get();
+      savedRank = String(profile.data()?.rank || '').trim();
+    } catch (error) {
+      console.warn('저장된 직급을 불러오지 못했습니다:', error);
+    }
+  }
   const localName = String(data.user || '').trim();
   const profileName = String(user?.displayName || '').trim();
 
@@ -55,6 +65,7 @@ async function applyNickname(user, preferredName = '', preferredColor = '') {
 
   data.uid = user.uid;
   data.user = nickname;
+  data.userRank = String(preferredRank || pendingLoginRank || savedRank || data.userRank || '').trim();
 
   const requestedColor = String(preferredColor || pendingLoginColor || '').trim();
   if (requestedColor) {
@@ -65,8 +76,9 @@ async function applyNickname(user, preferredName = '', preferredColor = '') {
 
   pendingLoginName = '';
   pendingLoginColor = '';
+  pendingLoginRank = '';
 
-  await ensureCloudUser(nickname, requestedColor);
+  await ensureCloudUser(nickname, requestedColor, data.userRank);
   await saveNicknameToProfile(nickname);
 
   localSave();
@@ -78,6 +90,7 @@ async function login() {
   const email = $('loginEmail')?.value.trim() || '';
   const password = $('loginPassword')?.value || '';
   const color = $('loginColor')?.value || '#2563eb';
+  const rank = $('loginRank')?.value.trim() || '';
 
   if (!name) {
     alert('캘린더에 표시할 이름을 입력하세요. 이메일 주소는 로그인용으로만 사용됩니다.');
@@ -94,6 +107,7 @@ async function login() {
     data.uid = name;
     data.userColors = data.userColors || {};
     data.userColors[name] = color;
+    data.userRank = rank;
     localSave();
     init();
     alert('Firebase 설정 전이라 이 브라우저에서만 임시 로그인됩니다.');
@@ -102,13 +116,14 @@ async function login() {
 
   pendingLoginName = name;
   pendingLoginColor = color;
+  pendingLoginRank = rank;
 
   if (auth?.currentUser) {
     try {
-      await applyNickname(auth.currentUser, name, color);
+      await applyNickname(auth.currentUser, name, color, rank);
       startRealtime();
       init();
-      alert('사용자 이름을 저장했습니다.');
+      alert('사용자 정보를 저장했습니다.');
     } catch (error) {
       console.error('사용자 이름 저장 오류:', error);
       alert(error.message || '사용자 이름 저장에 실패했습니다.');
@@ -147,7 +162,7 @@ async function login() {
   }
 
   try {
-    await applyNickname(auth.currentUser, name, color);
+    await applyNickname(auth.currentUser, name, color, rank);
     startRealtime();
     init();
   } catch (error) {
@@ -159,6 +174,7 @@ async function login() {
 async function logout() {
   pendingLoginName = '';
   pendingLoginColor = '';
+  pendingLoginRank = '';
 
   try {
     if (USE_FIREBASE && auth?.currentUser) {
@@ -179,6 +195,7 @@ async function logout() {
 
 async function setUser() {
   const name = $('userName')?.value.trim() || '';
+  const rank = $('userRank')?.value.trim() || '';
 
   if (!name) {
     alert('이름을 입력하세요.');
@@ -192,9 +209,10 @@ async function setUser() {
 
   try {
     if (USE_FIREBASE && auth?.currentUser) {
-      await applyNickname(auth.currentUser, name);
+      await applyNickname(auth.currentUser, name, '', rank);
     } else {
       data.user = name;
+      data.userRank = rank;
       localSave();
     }
 
@@ -204,7 +222,7 @@ async function setUser() {
     }
 
     init();
-    alert('사용자 이름을 저장했습니다.');
+    alert('사용자 정보를 저장했습니다.');
   } catch (error) {
     console.error('사용자 이름 저장 오류:', error);
     alert(error.message || '사용자 이름 저장에 실패했습니다.');
@@ -223,7 +241,7 @@ function watchAuthState() {
   auth.onAuthStateChanged(async user => {
     if (user) {
       try {
-        await applyNickname(user, pendingLoginName, pendingLoginColor);
+        await applyNickname(user, pendingLoginName, pendingLoginColor, pendingLoginRank);
         startRealtime();
       } catch (error) {
         console.error('로그인 사용자 이름 처리 오류:', error);
@@ -236,6 +254,7 @@ function watchAuthState() {
     } else {
       pendingLoginName = '';
       pendingLoginColor = '';
+      pendingLoginRank = '';
       data.user = '';
       data.uid = '';
       stopRealtime();
