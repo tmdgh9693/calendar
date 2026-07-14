@@ -41,6 +41,9 @@
       <label>이름</label>
       <input id="loginName" placeholder="예: 홍길동">
 
+      <label>직급</label>
+      <input id="loginRank" placeholder="예: 해양수산주사">
+
       <label>이메일</label>
       <input id="loginEmail" type="email" placeholder="example@email.com">
 
@@ -441,7 +444,8 @@
 
             <div>
               <label>성명</label>
-              <input id="tPerson">
+              <input id="tPerson" list="tripUserNames" autocomplete="off">
+              <datalist id="tripUserNames"></datalist>
             </div>
 
             <div>
@@ -529,13 +533,16 @@
           <label>현재 사용자</label>
           <input id="userName">
 
+          <label for="userRank">내 직급</label>
+          <input id="userRank" placeholder="예: 해양수산주사">
+
           <label for="userColor">내 일정 표시 색상</label>
           <div class="user-color-row">
             <input id="userColor" type="color" value="#2563eb" aria-label="내 일정 표시 색상">
             <span class="small">과 캘린더에서 내 일정에 이 색을 표시합니다.</span>
           </div>
 
-          <button class="p" onclick="setUser()">사용자 이름 저장</button>
+          <button class="p" onclick="setUser()">사용자 정보 저장</button>
           <button class="s" type="button" onclick="saveUserColor()">색상 저장</button>
           <button class="s" onclick="logout()">로그아웃</button>
           <button class="s" onclick="sample()">테스트용 샘플자료 넣기</button>
