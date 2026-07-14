@@ -1,32 +1,27 @@
 let currentTripEventTitle = '';
 let currentTripCalendarEventId = '';
-function tripUserProfileByName(name) {
+function refreshTripUserNames() {
+  const list = $('tripUserNames');
+  if (!list) return;
+  const names = Array.from(new Set([...(data.users || []), data.user].filter(Boolean))).sort();
+  list.innerHTML = names.map(name => `<option value="${esc(name)}"></option>`).join('');
+}
+
+function rankForUserName(name) {
   const key = String(name || '').trim();
-  return (data.userProfiles || []).find(profile => String(profile.name || '').trim() === key) || null;
+  return data.userRanks?.[key] || '';
 }
 
-function renderTripUserOptions() {
-  const datalist = $('tripUserNames');
-  if (!datalist) return;
-  const seen = new Set();
-  datalist.innerHTML = (data.userProfiles || [])
-    .filter(profile => profile && profile.name && !seen.has(profile.name) && seen.add(profile.name))
-    .map(profile => `<option value="${esc(profile.name)}">${esc(profile.rank || '')}</option>`)
-    .join('');
+function autofillMainTripRank(name) {
+  const rank = rankForUserName(name);
+  if (rank && $('tRank')) $('tRank').value = rank;
 }
 
-function applyTripRankFromName(nameInput, rankInput) {
-  const profile = tripUserProfileByName(nameInput?.value);
-  if (profile && rankInput) rankInput.value = profile.rank || '';
+function autofillAddedTripRank(input) {
+  const row = input.closest('.trip-person-row');
+  const rank = rankForUserName(input.value);
+  if (rank && row) row.querySelector('.trip-person-rank').value = rank;
   saveTripDraft();
-}
-
-function bindMainTripPersonAutocomplete() {
-  const nameInput = $('tPerson');
-  const rankInput = $('tRank');
-  if (!nameInput || nameInput.dataset.rankAutocomplete === '1') return;
-  nameInput.dataset.rankAutocomplete = '1';
-  ['input', 'change', 'blur'].forEach(type => nameInput.addEventListener(type, () => applyTripRankFromName(nameInput, rankInput)));
 }
 
 const TRIP_DRAFT_KEY = 'ys_aton_calendar_trip_draft_v1';
@@ -97,9 +92,8 @@ function bindTripDraftAutosave() {
 }
 
 function initTripDraft() {
+  refreshTripUserNames();
   bindTripDraftAutosave();
-  renderTripUserOptions();
-  bindMainTripPersonAutocomplete();
   loadTripDraft();
 }
 
@@ -131,7 +125,7 @@ function renderTripPeople() {
   });
 }
 
-function addTripPerson(rank = '', name = '', options = {}) {
+function addTripPerson(rank = '해양수산', name = '', options = {}) {
   const list = $('tripPeopleList');
   if (!list) return;
 
@@ -145,14 +139,11 @@ function addTripPerson(rank = '', name = '', options = {}) {
     </div>
     <div>
       <label>성명</label>
-      <input class="trip-person-name" list="tripUserNames" value="${esc(name || '')}" placeholder="성명" autocomplete="off">
+      <input class="trip-person-name" list="tripUserNames" value="${esc(name || '')}" placeholder="성명" oninput="autofillAddedTripRank(this)">
     </div>
     <button class="d" type="button" onclick="this.closest('.trip-person-row').remove(); renderTripPeople(); saveTripDraft();">삭제</button>
   `;
   list.appendChild(row);
-  const nameInput = row.querySelector('.trip-person-name');
-  const rankInput = row.querySelector('.trip-person-rank');
-  ['input', 'change', 'blur'].forEach(type => nameInput?.addEventListener(type, () => applyTripRankFromName(nameInput, rankInput)));
   renderTripPeople();
 
   if (options.save !== false) saveTripDraft();
@@ -534,6 +525,7 @@ async function calendarPhotoCopies() {
   for (const photo of picked) {
     let imageData = photo.data || '';
 
+    // Firestore 문서 용량 제한에 걸리지 않도록 캘린더 저장용 이미지는 한 번 더 작게 만듭니다.
     if (dataBytes(imageData) > 180 * 1024) {
       imageData = await resizeDataUrlForCalendar(imageData);
     }
