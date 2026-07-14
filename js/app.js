@@ -66,3 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
   }
 });
+
+window.addEventListener("load", () => {
+    requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+    });
+});
