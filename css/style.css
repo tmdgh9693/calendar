@@ -2,16 +2,11 @@
   box-sizing: border-box;
 }
 
-body {
+/* body {
   margin: 0;
   font-family: Arial, 'Malgun Gothic', sans-serif;
   background: #f4f6f8;
   color: #111827;
-}
-
-header h1 {
-  font-size: 18px;
-  margin: 0 0 4px;
 }
 
 main {
@@ -41,7 +36,7 @@ nav button {
 nav button.active {
   background: #12355b;
   color: white;
-}
+} */
 
 button {
   border: 0;
