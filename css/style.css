@@ -9,16 +9,6 @@ body {
   color: #111827;
 }
 
-header {
-  background: #12355b;
-  color: white;
-  padding: 14px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  transition: background 0.3s ease;
-}
-
 header h1 {
   font-size: 18px;
   margin: 0 0 4px;
