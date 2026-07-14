@@ -3,8 +3,6 @@ const KEY = 'ys_aton_calendar_v12_firebase';
 let data = {
   users: [],
   userColors: {},
-  userProfiles: [],
-  userRank: '',
   user: '',
   uid: '',
   events: [],
@@ -62,8 +60,7 @@ function localSave() {
       user: data.user,
       uid: data.uid,
       userColors: data.userColors,
-      userProfiles: data.userProfiles,
-      userRank: data.userRank,
+      userRanks: data.userRanks,
       events: data.events,
       docs: data.docs,
       hwpxTemplates: data.hwpxTemplates,
@@ -84,8 +81,7 @@ function load() {
     data.user = saved.user || data.user || '';
     data.uid = saved.uid || data.uid || '';
     data.userColors = saved.userColors || data.userColors || {};
-    data.userProfiles = saved.userProfiles || data.userProfiles || [];
-    data.userRank = saved.userRank || data.userRank || '';
+    data.userRanks = saved.userRanks || data.userRanks || {};
     data.events = saved.events || data.events || [];
     data.docs = saved.docs || data.docs || [];
     data.hwpxTemplates = saved.hwpxTemplates || data.hwpxTemplates || { meeting: [], trip: [] };
@@ -99,8 +95,7 @@ function load() {
   }
 
   data.users = data.users || [];
-  data.userProfiles = Array.isArray(data.userProfiles) ? data.userProfiles : [];
-  data.userRank = data.userRank || '';
+  data.userRanks = data.userRanks || {};
   data.events = data.events || [];
   data.docs = data.docs || [];
   data.hwpxTemplates = data.hwpxTemplates || { meeting: [], trip: [] };
