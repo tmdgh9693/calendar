@@ -28,6 +28,8 @@ function importData() {
     data.user = imported.user || data.user || '';
     data.uid = imported.uid || data.uid || '';
     data.userColors = imported.userColors || data.userColors || {};
+    data.userProfiles = imported.userProfiles || data.userProfiles || [];
+    data.userRank = imported.userRank || data.userRank || '';
     data.events = imported.events || [];
     data.docs = imported.docs || [];
     data.hwpxTemplates = imported.hwpxTemplates || data.hwpxTemplates || { meeting: null, trip: null };
@@ -103,6 +105,7 @@ async function saveUserColor() {
           name: data.user,
           email: auth.currentUser.email || '',
           color,
+          rank: data.userRank || '',
           updatedAt: new Date().toISOString()
         }, { merge: true });
     }
