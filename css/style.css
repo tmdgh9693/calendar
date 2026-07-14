@@ -19,13 +19,6 @@ header {
   transition: background 0.3s ease;
 }
 
-body.theme-personal header { background: #0011ab; }
-body.theme-dept header { background: #16a34a; }
-body.theme-meeting header { background: #7c3aed; }
-body.theme-trip header { background: #290031; }
-body.theme-archive header { background: #0f766e; }
-body.theme-settings header { background: #475569; }
-
 header h1 {
   font-size: 18px;
   margin: 0 0 4px;
@@ -273,7 +266,6 @@ body.theme-settings .main-header,
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 72px;
   padding: 10px 20px;
 }
 
