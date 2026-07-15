@@ -28,7 +28,7 @@ function init() {
   if ($('who')) {
     $('who').innerText =
       (data.user || '미로그인') +
-      (USE_FIREBASE ? ' / 실시간 동기화' : ' / Firebase 설정 필요');
+      (USE_FIREBASE ? ' ' : '');
   }
 
   if ($('userName')) {
