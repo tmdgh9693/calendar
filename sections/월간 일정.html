@@ -1,0 +1,35 @@
+<section class="tab hidden" id="monthlySchedule">
+<div class="card monthly-schedule-card">
+<div class="monthly-schedule-head">
+<div>
+<p class="monthly-schedule-eyebrow">과 캘린더 일정 모아보기</p>
+<h2 id="monthlyScheduleTitle">월간 일정</h2>
+</div>
+<div class="monthly-schedule-month-controls">
+<button aria-label="이전 달" class="s" onclick="moveMonthlySchedule(-1)" type="button">◀</button>
+<button class="s" onclick="goMonthlyScheduleToday()" type="button">이번 달</button>
+<button aria-label="다음 달" class="s" onclick="moveMonthlySchedule(1)" type="button">▶</button>
+</div>
+</div>
+<div class="monthly-schedule-tools">
+<label class="monthly-schedule-search">
+<span>검색</span>
+<input id="monthlyScheduleSearch" oninput="renderMonthlySchedule()" placeholder="일정명·담당자·장소 검색" type="search"/>
+</label>
+<label>
+<span>유형</span>
+<select id="monthlyScheduleType" onchange="renderMonthlySchedule()">
+<option value="">전체</option>
+<option value="출장">출장</option>
+<option value="점검">점검</option>
+<option value="공사">공사</option>
+<option value="보고">보고</option>
+<option value="회의">회의</option>
+<option value="행사">행사</option>
+</select>
+</label>
+</div>
+<div aria-live="polite" class="monthly-schedule-summary" id="monthlyScheduleSummary"></div>
+<div class="monthly-schedule-list" id="monthlyScheduleList"></div>
+</div>
+</section>
