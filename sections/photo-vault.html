@@ -1,0 +1,34 @@
+<section class="tab hidden" id="photoVault">
+  <div class="card photo-vault-card">
+    <div class="photo-vault-head">
+      <div>
+        <h2>사진 보관함</h2>
+        <p class="small">이곳에서 사진을 올리면 원본과 자동 압축본을 현재 기기에 함께 보관합니다. 출장복명 사진 첨부와는 별도로 관리됩니다.</p>
+      </div>
+      <button class="s" type="button" onclick="renderPhotoVault()">새로고침</button>
+    </div>
+
+    <div class="photo-vault-upload">
+      <label for="photoVaultUpload"><strong>사진 올리기</strong></label>
+      <input id="photoVaultUpload" type="file" accept="image/*" multiple onchange="addPhotoVaultFiles(this.files)">
+      <p class="small">휴대폰 원본 사진을 선택하면 원본 파일과 업무용 압축본을 함께 저장합니다.</p>
+    </div>
+
+    <div class="photo-vault-options">
+      <strong>선택 사진 일괄 다운로드</strong>
+      <label><input type="radio" name="photoVaultDownloadMode" value="original" checked> 원본</label>
+      <label><input type="radio" name="photoVaultDownloadMode" value="compressed"> 압축본</label>
+    </div>
+
+    <div class="photo-vault-toolbar">
+      <button class="s" type="button" onclick="selectAllPhotoVaultItems(true)">전체 선택</button>
+      <button class="s" type="button" onclick="selectAllPhotoVaultItems(false)">선택 해제</button>
+      <button class="g" type="button" onclick="downloadSelectedPhotoVaultItems()">선택 다운로드</button>
+      <button class="d" type="button" onclick="deleteSelectedPhotoVaultItems()">선택 삭제</button>
+      <span id="photoVaultSelectedCount" class="small">0장 선택</span>
+    </div>
+
+    <div id="photoVaultStatus" class="small"></div>
+    <div id="photoVaultList" class="photo-vault-list"></div>
+  </div>
+</section>
