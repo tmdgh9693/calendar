@@ -724,7 +724,7 @@ function renderPhotoVaultList(records) {
     </article>`;
   }).join('');
 
-  photoVaultStatus(`사진 ${records.length}장 · 같은 Firebase 계정의 기기에서 실시간 공유`);
+  photoVaultStatus(`사진 ${records.length}장 · 같은 계정의 기기에서 실시간 공유`);
   updatePhotoVaultSelectionUi();
 }
 
