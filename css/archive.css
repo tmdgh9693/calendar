@@ -1,0 +1,16 @@
+.list-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.list-item b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+#archiveView.reportbox {
+  min-height: 360px;
+}
