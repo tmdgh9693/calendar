@@ -691,7 +691,7 @@ function renderPhotoVaultList(records) {
 
   if (!records.length) {
     list.innerHTML = '<div class="photo-vault-empty">보관된 사진이 없습니다.<br>사진을 올리면 같은 계정으로 로그인한 휴대폰과 컴퓨터에서 함께 표시됩니다.</div>';
-    photoVaultStatus('보관 사진 0장 · Firestore 무료 저장 방식');
+    photoVaultStatus('보관 사진 0장');
     updatePhotoVaultSelectionUi();
     return;
   }
