@@ -164,6 +164,7 @@ async function saveTripToDeptCalendar() {
   const event = existing
     ? {
         ...existing,
+        // 기존 일정의 제목·날짜·유형은 유지하고 출장복명 완료 정보만 연결합니다.
         tripReportCompleted: true,
         tripReportCompletedAt: existing.tripReportCompletedAt || completedAt,
         tripReportUpdatedAt: completedAt,

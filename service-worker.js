@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aton-calendar-personal-completion-20260721-10';
+const CACHE_NAME = 'aton-calendar-trip-draft-sync-20260721-11';
 const APP_FILES = [
   './css/archive.css',
   './css/backup.css',

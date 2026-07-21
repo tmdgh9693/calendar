@@ -196,6 +196,7 @@ function startRealtime() {
     const hidden = new Set((data.deletedDocIds || []).map(String));
     data.docs = [...merged.values()]
       .filter(doc => !hidden.has(String(doc.id)))
+      .filter(doc => doc.docType !== 'tripDraft' && doc.docType !== 'tripDraftChunk')
       .sort((a, b) =>
       String(b.createdAt || b.date || '').localeCompare(
         String(a.createdAt || a.date || '')

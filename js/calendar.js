@@ -1,14 +1,18 @@
 function usesTripReportStatus(event) {
+  // 내 캘린더와 과 캘린더 모두 동일한 고정 칸에서 완료 상태를 표시합니다.
   return !!event && (event.scope === '개인' || event.scope === '과');
 }
 
 function isTripReportCompleted(event) {
   if (!event) return false;
 
+  // 내 캘린더는 일정 수정창에서 사용자가 직접 지정한 완료 상태를 사용합니다.
   if (event.scope === '개인') {
     return event.workCompleted === true;
   }
 
+  // 과 캘린더는 상태 확인 전용입니다. 출장복명 작성 완료를 우선 표시하고,
+  // 개인 일정에서 과 캘린더로 반영된 경우에는 개인 일정의 완료 상태를 표시합니다.
   if (event.tripReportCompleted === true || event.sourceType === 'tripReport') return true;
   return event.workCompleted === true;
 }
@@ -32,6 +36,8 @@ function setEventCompletionField(scope, completed = false, editable = true) {
   const input = $('evWorkCompleted');
   const isPersonalEvent = scope === '개인';
 
+  // 완료 상태 변경은 내 캘린더 일정에서만 허용합니다.
+  // 과 캘린더에서는 캘린더 칸의 완료 표시만 확인할 수 있습니다.
   if (row) row.classList.toggle('hidden', !isPersonalEvent);
   if (input) {
     input.checked = isPersonalEvent && !!completed;
@@ -227,6 +233,8 @@ async function saveEvent() {
       });
     }
   } else if (previous) {
+    // 과 캘린더 일정 수정창에서는 완료 상태를 변경하지 않습니다.
+    // 기존의 출장복명/개인 일정 반영 완료 정보는 그대로 보존합니다.
     [
       'workCompleted', 'workCompletedAt', 'workCompletedUpdatedAt',
       'workCompletedByUid', 'workCompletedBy', 'workCompletedSource'

@@ -1,5 +1,11 @@
+
 'use strict';
 
+// 백업 범위: 과 캘린더 일정 + 회의자료 + 출장복명서만 저장합니다.
+// 개인 캘린더, 사용자 설정, 출장복명 임시저장은 백업하지 않습니다.
+// [사진 보관함 백업 항목 주석 처리]
+// 사진 보관함 화면과 업로드 기능은 정상 사용합니다. 백업의 압축본/원본 포함 옵션과
+// 사진 데이터 ZIP 삽입·복원 코드만 현재 비활성화한 상태입니다.
 const BACKUP_VERSION = 5;
 
 function backupStatus(message) {
@@ -172,6 +178,7 @@ function backupEventDetails(event) {
   if (event?.place) details.push(`장소: ${event.place}`);
   if (event?.part) details.push(`구분: ${event.part}`);
   if (event?.sourceOwner || event?.owner) details.push(`작성자: ${event.sourceOwner || event.owner}`);
+  // '과 캘린더 반영', '회의자료 반영' 같은 내부 체크값은 한글 파일에 표시하지 않습니다.
   if (event?.summary) details.push(`요약: ${event.summary}`);
   if (event?.result) details.push(`실적: ${event.result}`);
   if (event?.plan) details.push(`계획: ${event.plan}`);
@@ -434,6 +441,7 @@ async function readBackupBundle(zip) {
     };
   }
 
+  // 이전 버전 ZIP 백업과의 호환. 불러온 뒤 과 일정·회의자료·출장복명만 선별합니다.
   return {
     info: await readBackupJson(zip, 'backup-info.json', null),
     events: await readBackupJson(zip, 'data/events.json', []),

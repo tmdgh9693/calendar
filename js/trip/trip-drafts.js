@@ -4,6 +4,117 @@ const NAMED_TRIP_DRAFT_DB = 'aton-calendar-trip-drafts';
 const NAMED_TRIP_DRAFT_STORE = 'drafts';
 const NAMED_TRIP_DRAFT_DB_VERSION = 1;
 
+const TRIP_DRAFT_CLOUD_DOC_TYPE = 'tripDraft';
+const TRIP_DRAFT_CLOUD_CHUNK_TYPE = 'tripDraftChunk';
+const TRIP_DRAFT_CLOUD_CHUNK_SIZE = 220000;
+
+function cloudTripDraftDocId(id) {
+  return `tripDraft_${String(ownerKey() || 'local')}_${String(id || '')}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+function cloudTripDraftChunkId(id, index) {
+  return `${cloudTripDraftDocId(id)}_part_${String(index).padStart(3, '0')}`;
+}
+
+function canSyncTripDraftsToCloud() {
+  return !!(window.USE_FIREBASE !== false && typeof USE_FIREBASE !== 'undefined' && USE_FIREBASE && db && auth?.currentUser);
+}
+
+async function listCloudTripDrafts() {
+  if (!canSyncTripDraftsToCloud()) return [];
+
+  const snapshot = await db.collection('docs').where('ownerUid', '==', String(ownerKey())).get();
+  const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const mainDocs = all.filter(item => item.docType === TRIP_DRAFT_CLOUD_DOC_TYPE);
+  const chunksByDraft = new Map();
+
+  all.filter(item => item.docType === TRIP_DRAFT_CLOUD_CHUNK_TYPE).forEach(item => {
+    const key = String(item.draftId || '');
+    if (!chunksByDraft.has(key)) chunksByDraft.set(key, []);
+    chunksByDraft.get(key).push(item);
+  });
+
+  const records = [];
+  for (const main of mainDocs) {
+    try {
+      const parts = (chunksByDraft.get(String(main.draftId || '')) || [])
+        .sort((a, b) => Number(a.partIndex || 0) - Number(b.partIndex || 0));
+      if (!parts.length || parts.length !== Number(main.chunkCount || 0)) continue;
+      const raw = parts.map(part => String(part.payload || '')).join('');
+      const record = JSON.parse(raw);
+      if (record?.id && record?.snapshot) records.push(record);
+    } catch (error) {
+      console.warn('클라우드 임시저장 복원 실패:', error);
+    }
+  }
+  return records;
+}
+
+async function putCloudTripDraft(record) {
+  if (!canSyncTripDraftsToCloud()) return false;
+
+  const ownerUid = String(ownerKey());
+  const raw = JSON.stringify(record);
+  const chunks = [];
+  for (let offset = 0; offset < raw.length; offset += TRIP_DRAFT_CLOUD_CHUNK_SIZE) {
+    chunks.push(raw.slice(offset, offset + TRIP_DRAFT_CLOUD_CHUNK_SIZE));
+  }
+
+  const existing = await db.collection('docs').where('ownerUid', '==', ownerUid).get();
+  const stale = existing.docs.filter(doc => {
+    const value = doc.data() || {};
+    return value.docType === TRIP_DRAFT_CLOUD_CHUNK_TYPE && String(value.draftId || '') === String(record.id);
+  });
+
+  const batch = db.batch();
+  stale.forEach(doc => batch.delete(doc.ref));
+  chunks.forEach((payload, index) => {
+    const ref = db.collection('docs').doc(cloudTripDraftChunkId(record.id, index));
+    batch.set(ref, {
+      id: ref.id,
+      docType: TRIP_DRAFT_CLOUD_CHUNK_TYPE,
+      draftId: record.id,
+      ownerUid,
+      owner: data.user || '',
+      scope: '개인',
+      partIndex: index,
+      payload,
+      updatedAt: new Date().toISOString()
+    });
+  });
+
+  const mainRef = db.collection('docs').doc(cloudTripDraftDocId(record.id));
+  batch.set(mainRef, {
+    id: mainRef.id,
+    docType: TRIP_DRAFT_CLOUD_DOC_TYPE,
+    draftId: record.id,
+    ownerUid,
+    owner: data.user || '',
+    scope: '개인',
+    title: record.title || '',
+    savedAt: Number(record.savedAt || Date.now()),
+    chunkCount: chunks.length,
+    updatedAt: new Date().toISOString()
+  });
+  await batch.commit();
+  return true;
+}
+
+async function removeCloudTripDraft(id) {
+  if (!canSyncTripDraftsToCloud()) return false;
+  const ownerUid = String(ownerKey());
+  const snapshot = await db.collection('docs').where('ownerUid', '==', ownerUid).get();
+  const batch = db.batch();
+  snapshot.docs.forEach(doc => {
+    const value = doc.data() || {};
+    const sameMain = value.docType === TRIP_DRAFT_CLOUD_DOC_TYPE && String(value.draftId || '') === String(id);
+    const sameChunk = value.docType === TRIP_DRAFT_CLOUD_CHUNK_TYPE && String(value.draftId || '') === String(id);
+    if (sameMain || sameChunk) batch.delete(doc.ref);
+  });
+  await batch.commit();
+  return true;
+}
+
 function tripDraftStatus(message) {
   const status = $('tripDraftStatus');
   if (status) status.textContent = message || '';
@@ -32,7 +143,7 @@ function openNamedTripDraftDb() {
 
 async function listNamedTripDrafts() {
   const database = await openNamedTripDraftDb();
-  const records = await new Promise((resolve, reject) => {
+  const localRecords = await new Promise((resolve, reject) => {
     const transaction = database.transaction(NAMED_TRIP_DRAFT_STORE, 'readonly');
     const request = transaction.objectStore(NAMED_TRIP_DRAFT_STORE).getAll();
     request.onsuccess = () => resolve(request.result || []);
@@ -41,9 +152,25 @@ async function listNamedTripDrafts() {
   database.close();
 
   const userKey = String(ownerKey() || 'local');
-  return records
+  const merged = new Map();
+  localRecords
     .filter(record => String(record.ownerUid || 'local') === userKey)
-    .sort((a, b) => Number(b.savedAt || 0) - Number(a.savedAt || 0));
+    .forEach(record => merged.set(String(record.id), record));
+
+  try {
+    const cloudRecords = await listCloudTripDrafts();
+    cloudRecords.forEach(record => {
+      const current = merged.get(String(record.id));
+      if (!current || Number(record.savedAt || 0) >= Number(current.savedAt || 0)) {
+        merged.set(String(record.id), record);
+        putNamedTripDraft(record).catch(() => {});
+      }
+    });
+  } catch (error) {
+    console.warn('클라우드 임시저장 목록을 불러오지 못했습니다:', error);
+  }
+
+  return [...merged.values()].sort((a, b) => Number(b.savedAt || 0) - Number(a.savedAt || 0));
 }
 
 async function putNamedTripDraft(record) {
@@ -119,9 +246,17 @@ async function saveNamedTripDraft() {
 
   try {
     await putNamedTripDraft(record);
+    let cloudSynced = false;
+    try {
+      cloudSynced = await putCloudTripDraft(record);
+    } catch (cloudError) {
+      console.warn('출장복명 임시저장 클라우드 동기화 실패:', cloudError);
+    }
     if (titleInput) titleInput.value = title;
     await refreshNamedTripDraftList(id);
-    tripDraftStatus(`“${title}” 임시저장 완료`);
+    tripDraftStatus(cloudSynced
+      ? `“${title}” 임시저장 완료 · PC/모바일 동기화됨`
+      : `“${title}” 임시저장 완료 · 이 기기에 저장됨`);
   } catch (error) {
     console.error('출장복명 임시저장 오류:', error);
     alert('임시저장에 실패했습니다.\n' + error.message);
@@ -172,6 +307,11 @@ async function deleteSelectedTripDraft() {
 
   try {
     await removeNamedTripDraft(id);
+    try {
+      await removeCloudTripDraft(id);
+    } catch (cloudError) {
+      console.warn('클라우드 임시저장 삭제 실패:', cloudError);
+    }
     if ($('tripDraftTitle')) $('tripDraftTitle').value = '';
     await refreshNamedTripDraftList();
     tripDraftStatus('임시저장 파일을 삭제했습니다.');
