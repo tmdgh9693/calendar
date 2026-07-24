@@ -16,7 +16,7 @@
 <link href="./manifest.webmanifest" rel="manifest"/>
 <link href="./css/style.css" rel="stylesheet"/>
 <link href="./css/components.css" rel="stylesheet"/>
-<link href="./css/calendar.css?v=20260724-1" rel="stylesheet"/>
+<link href="./css/calendar.css?v=20260721-10" rel="stylesheet"/>
 <link href="./css/meeting.css" rel="stylesheet"/>
 <link href="./css/trip.css?v=20260721-3" rel="stylesheet"/>
 <link href="./css/monthly-schedule.css?v=20260721-8" rel="stylesheet"/>
@@ -75,19 +75,17 @@
 </div>
 <div class="event-field">
 <label for="evPerson">담당자</label>
-<input autocomplete="name" id="evPerson" list="eventUserNames"/>
+<input autocomplete="name" id="evPerson" list="eventUserNames" oninput="autofillEventMainRank(this.value)"/>
 </div>
 </div>
-<div class="event-people-box hidden" id="evPeopleBox">
-<div class="event-people-head">
-<div>
-<strong>추가 참여 인원</strong>
-<p class="small">과 일정에 함께 참여하는 사람을 추가할 수 있습니다.</p>
-</div>
-<button class="s" id="addEventPersonBtn" onclick="addEventPerson()" type="button">+ 인원 추가</button>
-</div>
-<datalist id="eventUserNames"></datalist>
-<div class="event-people-list" id="evPeopleList"></div>
+<div class="event-people-box" id="evPeopleBox">
+  <div class="event-people-head">
+    <strong>추가 참여 인원</strong>
+    <button class="s" onclick="addEventPerson()" type="button">인원 추가</button>
+  </div>
+  <datalist id="eventUserNames"></datalist>
+  <div class="event-people-list" id="evPeopleList"></div>
+  <p class="small">함께 참여하는 사람이 있으면 직급과 성명을 추가하세요.</p>
 </div>
 <div class="event-row event-row-time">
 <div class="event-field event-date-field">
@@ -268,7 +266,7 @@
 <script src="./js/utils.js?v=20260721-6"></script>
 <script src="./js/firebase.js"></script>
 <script src="./js/auth.js"></script>
-<script src="./js/calendar.js?v=20260724-1"></script>
+<script src="./js/calendar.js?v=20260721-10"></script>
 <script src="./js/monthly-schedule.js?v=20260721-8"></script>
 <script src="./js/meeting/meeting-core.js"></script>
 <script src="./js/meeting/meeting-ui.js"></script>
