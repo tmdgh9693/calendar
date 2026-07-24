@@ -45,6 +45,111 @@ function setEventCompletionField(scope, completed = false, editable = true) {
   }
 }
 
+
+function normalizeEventPeople(people = []) {
+  if (!Array.isArray(people)) return [];
+  return people
+    .map(person => ({
+      rank: String(person?.rank || '').trim(),
+      name: String(person?.name || '').trim()
+    }))
+    .filter(person => person.rank || person.name);
+}
+
+function eventRankForName(name) {
+  const key = String(name || '').trim();
+  return data.userRanks?.[key] || '';
+}
+
+function refreshEventUserNames() {
+  const list = $('eventUserNames');
+  if (!list) return;
+  const names = Array.from(new Set([
+    ...(data.users || []),
+    data.user || ''
+  ].map(name => String(name || '').trim()).filter(Boolean))).sort();
+  list.innerHTML = names.map(name => `<option value="${esc(name)}"></option>`).join('');
+}
+
+function renderEventPeopleNumbers() {
+  document.querySelectorAll('#evPeopleList .event-person-row').forEach((row, index) => {
+    const number = row.querySelector('.event-person-number');
+    if (number) number.textContent = `추가 ${index + 1}`;
+  });
+}
+
+function autofillEventPersonRank(input) {
+  const row = input?.closest('.event-person-row');
+  if (!row) return;
+  const rank = eventRankForName(input.value);
+  const rankInput = row.querySelector('.event-person-rank');
+  if (rank && rankInput && !rankInput.value.trim()) rankInput.value = rank;
+}
+
+function addEventPerson(rank = '', name = '', options = {}) {
+  const list = $('evPeopleList');
+  if (!list) return;
+
+  const row = document.createElement('div');
+  row.className = 'event-person-row';
+  row.innerHTML = `
+    <span class="event-person-number">추가</span>
+    <div class="event-person-field">
+      <label>직급</label>
+      <input class="event-person-rank" value="${esc(rank || '')}" placeholder="직급">
+    </div>
+    <div class="event-person-field">
+      <label>성명</label>
+      <input class="event-person-name" list="eventUserNames" value="${esc(name || '')}" placeholder="성명" oninput="autofillEventPersonRank(this)">
+    </div>
+    <button class="d event-person-remove" type="button" aria-label="추가 인원 삭제">삭제</button>
+  `;
+  row.querySelector('.event-person-remove')?.addEventListener('click', () => {
+    row.remove();
+    renderEventPeopleNumbers();
+  });
+  list.appendChild(row);
+  renderEventPeopleNumbers();
+
+  if (options.scroll !== false) {
+    setTimeout(() => row.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30);
+  }
+}
+
+function clearEventPeople() {
+  const list = $('evPeopleList');
+  if (list) list.innerHTML = '';
+}
+
+function readEventPeople() {
+  return normalizeEventPeople(
+    Array.from(document.querySelectorAll('#evPeopleList .event-person-row')).map(row => ({
+      rank: row.querySelector('.event-person-rank')?.value || '',
+      name: row.querySelector('.event-person-name')?.value || ''
+    }))
+  );
+}
+
+function setEventPeopleField(scope, people = [], editable = true) {
+  const box = $('evPeopleBox');
+  const addButton = $('addEventPersonBtn');
+  const isDept = scope === '과';
+
+  box?.classList.toggle('hidden', !isDept);
+  if (addButton) addButton.disabled = !editable;
+  clearEventPeople();
+  refreshEventUserNames();
+
+  if (!isDept) return;
+  normalizeEventPeople(people).forEach(person => {
+    addEventPerson(person.rank, person.name, { scroll: false });
+  });
+
+  document.querySelectorAll('#evPeopleList input, #evPeopleList button').forEach(element => {
+    element.disabled = !editable;
+  });
+}
+
 function moveMonth(direction) {
   month.setMonth(month.getMonth() + direction);
   render();
@@ -85,6 +190,7 @@ function openEvent(scope, date, id = '') {
   $('evId').value = '';
   $('evType').value = '출장';
   $('evPerson').value = scope === '개인' ? data.user : '';
+  setEventPeopleField(scope, [], true);
   $('evTitle').value = '';
   $('evPlace').value = '';
   setEventCompletionField(scope, false, true);
@@ -123,6 +229,7 @@ function fillEvent(event) {
   $('evEndDate').value = event.endDate || event.date || today();
   $('evType').value = event.type;
   $('evPerson').value = event.person;
+  setEventPeopleField(event.scope, event.people || event.participants || [], editable);
   $('evTitle').value = event.title;
   $('evPlace').value = event.place;
 
@@ -164,6 +271,7 @@ function readEvent() {
 
     type: $('evType').value,
     person: $('evPerson').value.trim() || (scope === '개인' ? data.user : ''),
+    people: scope === '과' ? readEventPeople() : [],
     title: $('evTitle').value.trim() || '제목 없음',
     place: $('evPlace').value.trim(),
 

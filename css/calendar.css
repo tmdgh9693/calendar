@@ -241,6 +241,71 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+
+.event-people-box {
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.event-people-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.event-people-head p {
+  margin: 3px 0 0;
+}
+
+.event-people-list {
+  display: grid;
+  gap: 8px;
+}
+
+.event-person-row {
+  display: grid;
+  grid-template-columns: 52px minmax(90px, .85fr) minmax(110px, 1fr) 58px;
+  align-items: end;
+  gap: 8px;
+}
+
+.event-person-number {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.event-person-field {
+  min-width: 0;
+}
+
+.event-person-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.event-person-field input {
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+}
+
+.event-person-remove {
+  min-height: 42px;
+  margin: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .event-row-time {
   grid-template-columns: minmax(155px, 2fr) minmax(88px, .8fr) minmax(88px, .8fr);
 }
@@ -349,6 +414,31 @@
     min-height: 42px;
     padding: 8px 7px;
     font-size: 15px;
+  }
+
+
+  .event-people-box {
+    padding: 10px;
+  }
+
+  .event-people-head {
+    align-items: flex-start;
+  }
+
+  .event-person-row {
+    grid-template-columns: 42px minmax(70px, .8fr) minmax(92px, 1fr) 50px;
+    gap: 5px;
+  }
+
+  .event-person-number {
+    min-height: 40px;
+    font-size: 11px;
+  }
+
+  .event-person-field input,
+  .event-person-remove {
+    min-height: 40px;
+    font-size: 13px;
   }
 
   .event-modal-actions {
