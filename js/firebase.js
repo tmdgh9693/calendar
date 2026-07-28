@@ -32,8 +32,6 @@ async function initializeFirebase() {
     auth = sdk.auth();
     db = sdk.firestore();
 
-    // 사용자가 브라우저를 닫았다가 다시 열어도 로그인 상태가 유지되도록
-    // 로그인 정보를 이 브라우저에 유지합니다.
     try {
       await auth.setPersistence(sdk.auth.Auth.Persistence.LOCAL);
     } catch (error) {
