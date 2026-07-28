@@ -87,8 +87,8 @@ async function signup() {
     document.getElementById('signupEmail')?.focus();
     return;
   }
-  if (password.length < 10) {
-    setSignupStatus('비밀번호는 10자 이상으로 입력해 주세요.', 'warning');
+  if (password.length < 6) {
+    setSignupStatus('비밀번호는 6자 이상으로 입력해 주세요.', 'warning');
     document.getElementById('signupPassword')?.focus();
     return;
   }
@@ -128,7 +128,7 @@ async function signup() {
     const messages = {
       'auth/email-already-in-use': '이미 사용 중인 이메일입니다. 로그인하거나 다른 이메일을 사용해 주세요.',
       'auth/invalid-email': '이메일 주소 형식이 올바르지 않습니다.',
-      'auth/weak-password': '비밀번호가 너무 약합니다. 더 길고 복잡하게 입력해 주세요.',
+      'auth/weak-password': '비밀번호는 최소 6자 이상으로 입력해 주세요.',
       'auth/operation-not-allowed': '현재 회원가입이 허용되지 않습니다. 관리자에게 문의해 주세요.',
       'auth/admin-restricted-operation': '현재 회원가입이 제한되어 있습니다. 관리자에게 문의해 주세요.',
       'auth/network-request-failed': '네트워크 연결을 확인한 뒤 다시 시도해 주세요.',
@@ -225,7 +225,20 @@ async function applyNickname(user, preferredName = '', preferredColor = '', pref
 
 async function completeApprovedLogin(user, profile, preferred = {}) {
   setCurrentAccessProfile(profile);
-  await applyNickname(user, preferred.name, preferred.color, preferred.rank);
+  const viewerAccount = typeof isViewerUser === 'function' && isViewerUser();
+
+  if (viewerAccount) {
+    if (typeof syncRuntimeIdentityFromAccessProfile === 'function') {
+      syncRuntimeIdentityFromAccessProfile(profile, user);
+    }
+    pendingLoginName = '';
+    pendingLoginColor = '';
+    pendingLoginRank = '';
+    localSave();
+  } else {
+    await applyNickname(user, preferred.name, preferred.color, preferred.rank);
+  }
+
   if (typeof syncRuntimeIdentityFromAccessProfile === 'function') {
     syncRuntimeIdentityFromAccessProfile({
       ...profile,
@@ -234,8 +247,14 @@ async function completeApprovedLogin(user, profile, preferred = {}) {
       color: data.userColors?.[user.uid] || profile?.color || '#2563eb'
     }, user);
   }
-  init();
-  startRealtime();
+  if (viewerAccount) {
+    stopRealtime();
+    clearSensitiveSessionData({ clearIdentity: false });
+    init();
+  } else {
+    init();
+    startRealtime();
+  }
   if (typeof startOwnAccessWatch === 'function') startOwnAccessWatch();
   setLoginStatus('', '');
 }

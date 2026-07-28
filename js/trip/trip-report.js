@@ -237,6 +237,7 @@ function tripHwpxFilename() {
 }
 
 async function makeTrip(options = {}) {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   const date = $('tDate')?.value || today();
   const endDate = $('tEndDate')?.value || date;
   const reportDate = $('tReportDate')?.value || date;

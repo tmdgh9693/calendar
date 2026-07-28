@@ -179,6 +179,10 @@ function realtimeError(label) {
 function startRealtime() {
   if (!USE_FIREBASE || !auth || !auth.currentUser) return;
   if (typeof hasApprovedAccess === 'function' && !hasApprovedAccess()) return;
+  if (typeof isViewerUser === 'function' && isViewerUser()) {
+    stopRealtime();
+    return;
+  }
 
   stopRealtime();
 

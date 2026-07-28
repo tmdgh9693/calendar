@@ -60,7 +60,7 @@ function renderArchive() {
 
   if (!box) return;
 
-  const docs = (data.docs || []).filter(doc =>
+  const docs = (typeof isViewerUser === 'function' && isViewerUser() ? [] : (data.docs || [])).filter(doc =>
     doc.scope === '과' ||
     !doc.ownerUid ||
     doc.ownerUid === ownerKey() ||
@@ -110,6 +110,7 @@ function renderArchive() {
 }
 
 function viewDoc(id) {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   const doc = data.docs.find(item => item.id === id);
 
   if (!doc) return;

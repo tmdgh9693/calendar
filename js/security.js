@@ -63,6 +63,14 @@ function isAdminUser() {
   return hasApprovedAccess() && accessRole() === 'admin';
 }
 
+function isViewerUser() {
+  return hasApprovedAccess() && accessRole() === 'viewer';
+}
+
+function canUseProtectedFeatures() {
+  return hasApprovedAccess() && !isViewerUser();
+}
+
 function canWriteData() {
   return hasApprovedAccess() && accessRole() !== 'viewer';
 }
@@ -215,8 +223,8 @@ function updateAccessUi() {
 
   const roleBadge = document.getElementById('accessRoleBadge');
   if (roleBadge) {
-    roleBadge.textContent = allowed ? accessRoleLabel() : '';
-    roleBadge.classList.toggle('hidden', !allowed);
+    roleBadge.textContent = '';
+    roleBadge.classList.add('hidden');
   }
 
   const adminCard = document.getElementById('adminUserManagementCard');
@@ -238,7 +246,74 @@ function updateAccessUi() {
   document.querySelectorAll('[data-requires-admin="true"]').forEach(element => {
     element.classList.toggle('hidden', !isAdminUser());
   });
+
+  updateViewerModeUi();
 }
+
+function viewerNoticeText(sectionId) {
+  if (sectionId === 'personal' || sectionId === 'dept') {
+    return '조회 전용 계정입니다. 일정 내용은 표시되지 않으며 캘린더 조회·등록·수정 기능을 사용할 수 없습니다.';
+  }
+  return '조회 전용 계정에서는 이 메뉴의 기능과 자료를 사용할 수 없습니다. 상단 또는 하단 탭 이동과 로그아웃만 가능합니다.';
+}
+
+function updateViewerModeUi() {
+  const viewer = isViewerUser();
+
+  document.querySelectorAll('main > section.tab').forEach(section => {
+    let notice = Array.from(section.children)
+      .find(child => child.classList?.contains('viewer-access-notice'));
+
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.className = 'card notice viewer-access-notice hidden';
+      notice.setAttribute('role', 'status');
+      section.prepend(notice);
+    }
+
+    notice.textContent = viewerNoticeText(section.id);
+    notice.classList.toggle('hidden', !viewer);
+
+    Array.from(section.children).forEach(child => {
+      if (child === notice) return;
+      const keepBlankCalendar = ['personal', 'dept'].includes(section.id) && !!child.querySelector?.('.cal');
+      child.classList.toggle('viewer-section-hidden', viewer && !keepBlankCalendar);
+    });
+  });
+
+  document.querySelectorAll('main button, main input, main select, main textarea').forEach(element => {
+    if (viewer) {
+      if (!element.disabled) {
+        element.disabled = true;
+        element.dataset.viewerDisabled = 'true';
+      }
+      element.setAttribute('aria-disabled', 'true');
+    } else if (element.dataset.viewerDisabled === 'true') {
+      element.disabled = false;
+      delete element.dataset.viewerDisabled;
+      element.removeAttribute('aria-disabled');
+    }
+  });
+
+  if (viewer) {
+    document.getElementById('dayEventsOverlay')?.remove();
+    document.getElementById('modal')?.classList.add('hidden');
+    document.getElementById('deptMeetingResultPanel')?.classList.add('hidden');
+  }
+}
+
+function blockViewerMainInteraction(event) {
+  if (!isViewerUser()) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest('main')) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
+['click', 'dblclick', 'input', 'change', 'submit', 'keydown'].forEach(type => {
+  document.addEventListener(type, blockViewerMainInteraction, true);
+});
 
 
 function stopOwnAccessWatch() {
@@ -271,8 +346,14 @@ function startOwnAccessWatch() {
     const previousRole = accessRole();
     setCurrentAccessProfile(profile);
     if (previousRole !== accessRole()) {
-      if (typeof startRealtime === 'function') startRealtime();
-      if (typeof render === 'function') render();
+      if (isViewerUser()) {
+        stopRealtime();
+        clearSensitiveSessionData({ clearIdentity: false });
+        init();
+      } else {
+        if (typeof startRealtime === 'function') startRealtime();
+        if (typeof render === 'function') render();
+      }
     }
   }, error => {
     console.error('현재 사용자 권한 감시 실패:', error);

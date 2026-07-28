@@ -138,6 +138,7 @@ function setEventModalEditable(editable) {
 }
 
 function openEvent(scope, date, id = '') {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   if (!id && typeof requireWriteAccess === 'function' && !requireWriteAccess('일정 등록')) return;
   $('modal').classList.remove('hidden');
   $('evScope').value = scope;
@@ -497,7 +498,8 @@ function renderCal(scope) {
   const visibleEnd = localDate(visibleEndDate);
 
   const eventsByDate = new Map();
-  (data.events || [])
+  const visibleEvents = (typeof isViewerUser === 'function' && isViewerUser()) ? [] : (data.events || []);
+  visibleEvents
     .filter(event => event.scope === scope && (scope === '과' || mine(event)))
     .forEach(event => {
       const eventStart = String(event.date || '');
@@ -586,6 +588,7 @@ function closeDayEvents() {
 }
 
 function showDayEvents(scope, date) {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   closeDayEvents();
   const events = (data.events || [])
     .filter(event =>

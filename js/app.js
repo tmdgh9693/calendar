@@ -35,8 +35,7 @@ function init() {
   document.body.classList.toggle('access-locked', !accessAllowed);
 
   if ($('who')) {
-    const roleText = accessAllowed && typeof accessRoleLabel === 'function' ? ` · ${accessRoleLabel()}` : '';
-    $('who').innerText = accessAllowed && displayName ? displayName + roleText : '미로그인';
+    $('who').innerText = accessAllowed && displayName ? displayName : '미로그인';
   }
 
   if ($('userName')) {

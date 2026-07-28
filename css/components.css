@@ -197,6 +197,7 @@ textarea {
 
 .decision-modal{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.48)}.decision-modal.hidden{display:none}.decision-modal-box{width:min(420px,100%);margin:0}.decision-modal-box h2{margin-top:0}.decision-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.decision-modal-actions button{width:100%}
 
+/* Important decision popup */
 .decision-modal{position:fixed!important;inset:0!important;z-index:99999!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:20px!important;background:rgba(0,0,0,.68)!important;backdrop-filter:blur(3px)}
 .decision-modal.hidden{display:none!important}
 .decision-modal-box{width:min(460px,calc(100vw - 32px))!important;background:#fff!important;color:#111827!important;border:2px solid #1d4ed8!important;border-radius:18px!important;padding:26px!important;box-shadow:0 28px 80px rgba(0,0,0,.45)!important;opacity:1!important}
@@ -205,6 +206,7 @@ textarea {
 .decision-modal-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;margin-top:24px!important}
 .decision-modal-actions button{min-height:48px!important;font-size:16px!important;font-weight:700!important}
 
+/* Firebase 승인 사용자 보안 화면 */
 body.access-locked .main-header,
 body.access-locked .app-nav,
 body.access-locked main,
@@ -280,6 +282,8 @@ body.role-viewer .viewer-write-disabled { opacity: .55; pointer-events: none; }
   .access-user-summary { grid-column: auto; }
 }
 
+
+/* 사이트 접속 코드 게이트 */
 body.site-code-checking #siteCodeGate,
 body.site-code-checking #login,
 body.site-code-checking .main-header,
@@ -320,6 +324,7 @@ body.site-code-locked .site-footer { display: none !important; }
 .site-code-remember input { width: auto; margin: 0; }
 .site-code-actions { grid-template-columns: 1.4fr 1fr; }
 
+/* 관리자 보안 관리: 설정 화면은 작게, 상세 관리는 모달에서 */
 .admin-security-launcher { grid-column: 1 / -1; }
 .admin-security-launcher-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .admin-security-launcher-head h2 { margin-bottom: 4px; }
@@ -377,4 +382,41 @@ body.modal-open { overflow: hidden; }
 .signup-form-grid > div { min-width: 0; }
 @media (max-width: 620px) {
   .signup-form-grid { grid-template-columns: 1fr; gap: 0; }
+}
+
+
+/* 조회 전용 계정: 탭 이동 외 모든 기능과 자료 노출 차단 */
+body.role-viewer .viewer-section-hidden {
+  display: none !important;
+}
+
+body.role-viewer .viewer-access-notice {
+  display: block !important;
+  margin-bottom: 14px;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+body.role-viewer main button,
+body.role-viewer main input,
+body.role-viewer main select,
+body.role-viewer main textarea,
+body.role-viewer main [onclick] {
+  cursor: not-allowed !important;
+}
+
+body.role-viewer .cal .cell,
+body.role-viewer .cal .event,
+body.role-viewer .more-events-button {
+  pointer-events: none !important;
+}
+
+body.role-viewer .cal .event,
+body.role-viewer .more-events-button {
+  display: none !important;
+}
+
+body.role-viewer .access-role-badge {
+  display: none !important;
 }

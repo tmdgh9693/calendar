@@ -17,6 +17,7 @@ let photoVaultRepairTargetKey = '';
 let photoVaultOriginalProbeRunning = false;
 
 async function activePhotoVaultUser() {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return null;
   if (typeof initializeFirebase === 'function') await initializeFirebase();
   return USE_FIREBASE && auth?.currentUser && db &&
     (typeof hasApprovedAccess !== 'function' || hasApprovedAccess())
@@ -786,6 +787,14 @@ function initPhotoVaultUi() {
 async function renderPhotoVault() {
   const list = document.getElementById('photoVaultList');
   if (!list) return;
+
+  if (typeof isViewerUser === 'function' && isViewerUser()) {
+    stopPhotoVaultRealtime();
+    selectedPhotoVaultKeys.clear();
+    list.innerHTML = '';
+    photoVaultStatus('');
+    return;
+  }
 
   initPhotoVaultUi();
   photoVaultStatus('사진 보관함에 연결하는 중입니다.');

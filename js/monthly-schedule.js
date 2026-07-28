@@ -50,6 +50,7 @@ function monthlyScheduleEventMatches(event, search, type) {
 }
 
 function monthlyScheduleOpen(eventId, date) {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   openEvent('과', date, eventId);
 }
 
@@ -71,7 +72,8 @@ function renderMonthlySchedule() {
   title.textContent = `${year}년 ${monthIndex + 1}월 월간 일정`;
 
   const byDate = new Map();
-  const matchedEvents = (data.events || [])
+  const sourceEvents = (typeof isViewerUser === 'function' && isViewerUser()) ? [] : (data.events || []);
+  const matchedEvents = sourceEvents
     .filter(event => event.scope === '과')
     .filter(event => monthlyScheduleEventMatches(event, search, type));
 

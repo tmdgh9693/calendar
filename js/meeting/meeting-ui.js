@@ -1,6 +1,7 @@
 'use strict';
 
 function makeMeeting() {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   updateMeetingPeriod();
 
   const period = periodInfo();
@@ -78,6 +79,7 @@ function setDeptMeetingDatesByType(type) {
 }
 
 function makeDeptMeetingCustom(type) {
+  if (typeof isViewerUser === 'function' && isViewerUser()) return;
   window.lastDeptMeetingType = type;
   setDeptMeetingDatesByType(type);
 
