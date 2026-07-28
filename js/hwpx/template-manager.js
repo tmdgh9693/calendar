@@ -208,7 +208,7 @@ function renderHwpxTemplateStatus() {
     const cloudNotice = hwpxCloudStatus || (
       USE_FIREBASE
         ? '템플릿은 이 브라우저에 먼저 저장됩니다. 서버 공유는 자동으로 시도합니다.'
-        : 'Firebase를 쓰지 않는 상태라 이 브라우저에만 저장됩니다.'
+        : '온라인 공유를 사용할 수 없는 상태라 이 브라우저에만 저장됩니다.'
     );
 
     $('hwpxStatus').innerText =

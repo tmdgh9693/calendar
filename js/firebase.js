@@ -33,7 +33,7 @@ async function initializeFirebase() {
     db = sdk.firestore();
 
     // 사용자가 브라우저를 닫았다가 다시 열어도 로그인 상태가 유지되도록
-    // Firebase 인증 정보를 로컬 지속성으로 저장합니다.
+    // 로그인 정보를 이 브라우저에 유지합니다.
     try {
       await auth.setPersistence(sdk.auth.Auth.Persistence.LOCAL);
     } catch (error) {
@@ -44,7 +44,7 @@ async function initializeFirebase() {
     USE_FIREBASE = true;
     return true;
   })().catch(error => {
-    console.warn('Firebase 초기화 실패:', error);
+    console.warn('로그인 서비스 초기화 실패:', error);
     USE_FIREBASE = false;
     auth = null;
     db = null;
@@ -171,7 +171,7 @@ function realtimeError(label) {
   return error => {
     console.error(`${label} 실시간 동기화 오류:`, error);
     if (error?.code === 'permission-denied') {
-      setLoginStatus?.('자료 접근 권한이 거부되었습니다. 관리자 승인과 Firestore 규칙을 확인하세요.', 'error');
+      setLoginStatus?.('자료 접근 권한이 없습니다. 관리자 승인 상태를 확인하세요.', 'error');
     }
   };
 }

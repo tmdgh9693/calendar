@@ -42,7 +42,7 @@ async function saveNicknameToProfile(name) {
       await auth.currentUser.updateProfile({ displayName: name });
     }
   } catch (error) {
-    console.warn('Firebase 표시 이름 저장 실패:', error);
+    console.warn('표시 이름 저장 실패:', error);
   }
 }
 
@@ -101,9 +101,17 @@ async function applyNickname(user, preferredName = '', preferredColor = '', pref
 async function completeApprovedLogin(user, profile, preferred = {}) {
   setCurrentAccessProfile(profile);
   await applyNickname(user, preferred.name, preferred.color, preferred.rank);
+  if (typeof syncRuntimeIdentityFromAccessProfile === 'function') {
+    syncRuntimeIdentityFromAccessProfile({
+      ...profile,
+      name: data.user || profile?.name || user?.displayName || '',
+      rank: data.userRanks?.[user.uid] || profile?.rank || '',
+      color: data.userColors?.[user.uid] || profile?.color || '#2563eb'
+    }, user);
+  }
+  init();
   startRealtime();
   if (typeof startOwnAccessWatch === 'function') startOwnAccessWatch();
-  init();
   setLoginStatus('', '');
 }
 
@@ -118,7 +126,7 @@ async function processSignedInUser(user, token) {
     console.error('접근 승인 요청 생성 실패:', error);
     clearSensitiveSessionData();
     setCurrentAccessProfile(null);
-    setLoginStatus('승인 정보를 확인하지 못했습니다. Firestore 규칙을 먼저 적용해 주세요.', 'error');
+    setLoginStatus('승인 정보를 확인하지 못했습니다. 관리자 설정을 확인해 주세요.', 'error');
     init();
     return;
   }
@@ -148,8 +156,8 @@ async function login() {
   await initializeFirebase();
 
   if (!USE_FIREBASE || !auth) {
-    setLoginStatus('보안 버전은 Firebase 연결이 필요합니다. 인터넷 연결과 firebase-config.js를 확인하세요.', 'error');
-    alert('보안 버전은 Firebase 연결이 필요합니다.');
+    setLoginStatus('로그인 서비스에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.', 'error');
+    alert('로그인 서비스에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.');
     return;
   }
 
@@ -187,16 +195,16 @@ async function login() {
   try {
     await auth.signInWithEmailAndPassword(email, password);
   } catch (error) {
-    console.error('Firebase 로그인 오류:', error);
+    console.error('로그인 오류:', error);
 
     const messages = {
-      'auth/user-not-found': '등록되지 않은 계정입니다. 관리자에게 Firebase 계정 생성을 요청하세요.',
+      'auth/user-not-found': '등록되지 않은 계정입니다. 관리자에게 계정 등록을 요청하세요.',
       'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않거나 등록되지 않은 계정입니다.',
       'auth/wrong-password': '비밀번호가 올바르지 않습니다.',
-      'auth/user-disabled': 'Firebase Authentication에서 사용 중지된 계정입니다.',
+      'auth/user-disabled': '사용이 중지된 계정입니다. 관리자에게 문의하세요.',
       'auth/too-many-requests': '로그인 시도가 너무 많아 일시적으로 차단되었습니다. 잠시 후 다시 시도하세요.',
-      'auth/configuration-not-found': 'Firebase Authentication에서 이메일/비밀번호 로그인을 사용 설정하세요.',
-      'auth/unauthorized-domain': 'Firebase Authentication 승인된 도메인에 현재 사이트 주소를 추가하세요.',
+      'auth/configuration-not-found': '로그인 방식이 설정되지 않았습니다. 관리자에게 문의하세요.',
+      'auth/unauthorized-domain': '현재 사이트 주소가 로그인 허용 목록에 등록되지 않았습니다.',
       'auth/admin-restricted-operation': '관리자만 계정을 만들 수 있도록 설정된 프로젝트입니다.'
     };
     const message = messages[error.code] || `로그인 오류: ${error.message}`;
@@ -281,7 +289,7 @@ async function watchAuthState() {
   if (!USE_FIREBASE || !auth) {
     clearSensitiveSessionData();
     setCurrentAccessProfile(null);
-    setLoginStatus('Firebase에 연결할 수 없습니다. 보안 버전에서는 로컬 임시 로그인을 허용하지 않습니다.', 'error');
+    setLoginStatus('로그인 서비스에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.', 'error');
     init();
     return;
   }
@@ -301,7 +309,7 @@ async function watchAuthState() {
     pendingLoginRank = '';
     setCurrentAccessProfile(null);
     clearSensitiveSessionData();
-    if (!lastAccessMessage) setLoginStatus('승인된 Firebase 계정으로 로그인해 주세요.', '');
+    if (!lastAccessMessage) setLoginStatus('승인된 계정으로 로그인해 주세요.', '');
     init();
   });
 }

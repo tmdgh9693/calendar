@@ -18,6 +18,15 @@ function init() {
   }
 
   const accessAllowed = typeof hasApprovedAccess === 'function' ? hasApprovedAccess() : !!data.user;
+  const authenticatedUser = auth?.currentUser || null;
+  const profileName = String(currentAccessProfile?.name || '').trim();
+  const accountName = String(authenticatedUser?.displayName || '').trim();
+  const displayName = String(data.user || profileName || (!isEmailLike(accountName) ? accountName : '') || '').trim();
+
+  if (accessAllowed && authenticatedUser) {
+    data.uid = authenticatedUser.uid;
+    if (displayName) data.user = displayName;
+  }
 
   if ($('login')) {
     $('login').classList.toggle('hidden', accessAllowed);
@@ -27,16 +36,18 @@ function init() {
 
   if ($('who')) {
     const roleText = accessAllowed && typeof accessRoleLabel === 'function' ? ` · ${accessRoleLabel()}` : '';
-    $('who').innerText = (data.user || '미로그인') + roleText;
+    $('who').innerText = accessAllowed && displayName ? displayName + roleText : '미로그인';
   }
 
   if ($('userName')) {
-    $('userName').value = data.user || '';
+    $('userName').value = accessAllowed ? displayName : '';
   }
 
-  const savedColor = data.userColors?.[ownerKey()] || data.userColors?.[data.user] || '#2563eb';
+  const profileColor = String(currentAccessProfile?.color || '').trim();
+  const savedColor = profileColor || data.userColors?.[ownerKey()] || data.userColors?.[displayName] || '#2563eb';
 
-  const savedRank = data.userRanks?.[ownerKey()] || data.userRanks?.[data.user] || '';
+  const profileRank = String(currentAccessProfile?.rank || '').trim();
+  const savedRank = profileRank || data.userRanks?.[ownerKey()] || data.userRanks?.[displayName] || '';
   if ($('userRank')) $('userRank').value = savedRank;
   if ($('loginRank')) $('loginRank').value = savedRank;
   if ($('tRank') && !$('tRank').value) $('tRank').value = savedRank;

@@ -14,9 +14,9 @@
       element.classList.toggle('online', online);
       element.classList.toggle('offline', !online);
       element.title = online
-        ? 'Firebase 승인 확인과 서버 동기화를 사용할 수 있습니다.'
+        ? '로그인 확인과 온라인 동기화를 사용할 수 있습니다.'
         : (window.SECURE_CLOUD_ONLY
-          ? '보안 모드에서는 인터넷 연결 전까지 로그인과 일정 조회를 사용할 수 없습니다.'
+          ? '인터넷 연결 전까지 로그인과 일정 조회를 사용할 수 없습니다.'
           : '현재 기기에 저장하며, 인터넷 연결 후 서버 동기화를 다시 시도합니다.');
     }
     window.dispatchEvent(new CustomEvent('appconnectionchange', { detail: { online } }));

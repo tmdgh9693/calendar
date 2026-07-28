@@ -14,8 +14,8 @@
 <link as="image" href="./icons/icon-192.png" rel="preload"/>
 <link as="image" href="./icons/icon-192.png" rel="preload"/>
 <link href="./manifest.webmanifest" rel="manifest"/>
-<link href="./css/style.css?v=20260728-codegate2" rel="stylesheet"/>
-<link href="./css/components.css?v=20260728-codegate2" rel="stylesheet"/>
+<link href="./css/style.css?v=20260728-displayfix1" rel="stylesheet"/>
+<link href="./css/components.css?v=20260728-displayfix1" rel="stylesheet"/>
 <link href="./css/calendar.css?v=20260721-10" rel="stylesheet"/>
 <link href="./css/meeting.css" rel="stylesheet"/>
 <link href="./css/trip.css?v=20260721-3" rel="stylesheet"/>
@@ -38,7 +38,7 @@
       <span class="security-badge">1차 접속 확인</span>
     </div>
     <div class="notice small security-login-notice">
-      접속 코드는 Firebase 로그인과 별도로 확인됩니다. 계정 승인과 Firestore 권한 검사는 그대로 유지됩니다.
+      접속 코드를 확인한 뒤 로그인 화면으로 이동합니다. 사용자 승인과 접근 권한은 계속 적용됩니다.
     </div>
     <label for="siteAccessCodeInput">접속 코드</label>
     <input id="siteAccessCodeInput" type="password" autocomplete="one-time-code" placeholder="접속 코드를 입력하세요" onkeydown="if(event.key==='Enter'){verifySiteAccessCode()}"/>
@@ -59,7 +59,7 @@
 <div class="secure-login-heading">
 <div>
 <h2>승인된 사용자 로그인</h2>
-<p class="small">Firebase Authentication에 등록되고 관리자가 승인한 사용자만 일정과 자료를 볼 수 있습니다.</p>
+<p class="small">관리자가 등록하고 승인한 사용자만 일정과 자료를 볼 수 있습니다.</p>
 </div>
 <span class="security-badge">승인 사용자 전용</span>
 </div>
@@ -73,7 +73,7 @@
 <label>이메일</label>
 <input id="loginEmail" placeholder="example@email.com" type="email" autocomplete="username"/>
 <label>비밀번호</label>
-<input id="loginPassword" placeholder="Firebase에 등록된 비밀번호" type="password" autocomplete="current-password"/>
+<input id="loginPassword" placeholder="등록된 비밀번호" type="password" autocomplete="current-password"/>
 <label for="loginColor">내 일정 표시 색상</label>
 <div class="login-color-row">
 <input aria-label="로그인 시 내 일정 표시 색상" id="loginColor" type="color" value="#2563eb"/>
@@ -230,7 +230,7 @@
 
     <details class="admin-code-settings">
       <summary>사이트 접속 코드 설정</summary>
-      <p class="small">새 브라우저나 접속 코드 변경 후 처음 접속할 때 로그인 전에 코드를 확인합니다. 코드는 원문이 아닌 SHA-256 해시로 저장됩니다.</p>
+      <p class="small">새 브라우저에서 처음 접속하거나 코드가 변경되면 로그인 전에 접속 코드를 확인합니다.</p>
       <div class="admin-code-grid">
         <div>
           <label for="adminSiteCode">새 접속 코드</label>
@@ -782,10 +782,10 @@
 <script src="./js/offline-mode.js"></script>
 <script src="./js/firebase-loader.js"></script>
 <script src="./js/firebase-config.js"></script>
-<script src="./js/utils.js?v=20260721-6"></script>
-<script src="./js/firebase.js?v=20260728-codegate2"></script>
-<script src="./js/security.js?v=20260728-codegate2"></script>
-<script src="./js/auth.js?v=20260728-codegate2"></script>
+<script src="./js/utils.js?v=20260728-displayfix1"></script>
+<script src="./js/firebase.js?v=20260728-displayfix1"></script>
+<script src="./js/security.js?v=20260728-displayfix1"></script>
+<script src="./js/auth.js?v=20260728-displayfix1"></script>
 <script src="./js/calendar.js?v=20260721-10"></script>
 <script src="./js/monthly-schedule.js?v=20260721-8"></script>
 <script src="./js/meeting/meeting-core.js"></script>
@@ -805,6 +805,6 @@
 <script src="./js/settings.js?v=20260721-1"></script>
 <script src="./js/backup.js?v=20260721-5"></script>
 <script src="./js/app-install.js?v=20260716-4"></script>
-<script src="./js/app.js?v=20260728-codegate2"></script>
+<script src="./js/app.js?v=20260728-displayfix1"></script>
 </body>
 </html>

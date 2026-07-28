@@ -104,6 +104,26 @@ function setLoginStatus(message = '', tone = '') {
   element.classList.toggle('hidden', !lastAccessMessage);
 }
 
+function syncRuntimeIdentityFromAccessProfile(profile = currentAccessProfile, user = auth?.currentUser) {
+  if (!profile || !user) return;
+
+  const profileName = String(profile.name || user.displayName || '').trim();
+  const profileRank = String(profile.rank || '').trim();
+  const profileColor = String(profile.color || '#2563eb').trim() || '#2563eb';
+
+  data.uid = user.uid;
+  if (profileName && !isEmailLike(profileName)) data.user = profileName;
+
+  data.userRanks = data.userRanks || {};
+  data.userColors = data.userColors || {};
+  data.userRanks[user.uid] = profileRank;
+  data.userColors[user.uid] = profileColor;
+  if (data.user) {
+    data.userRanks[data.user] = profileRank;
+    data.userColors[data.user] = profileColor;
+  }
+}
+
 function setCurrentAccessProfile(profile) {
   currentAccessProfile = profile
     ? {
@@ -113,6 +133,7 @@ function setCurrentAccessProfile(profile) {
       }
     : null;
 
+  if (currentAccessProfile) syncRuntimeIdentityFromAccessProfile(currentAccessProfile);
   document.body.dataset.accessRole = currentAccessProfile ? accessRole() : '';
   updateAccessUi();
 }
@@ -277,7 +298,7 @@ function startAdminAccessWatch() {
   }, error => {
     console.error('사용자 권한 목록 불러오기 실패:', error);
     const status = document.getElementById('adminUserStatus');
-    if (status) status.textContent = '사용자 목록을 불러오지 못했습니다. Firestore 규칙을 확인하세요.';
+    if (status) status.textContent = '사용자 목록을 불러오지 못했습니다. 관리자 설정과 네트워크 연결을 확인하세요.';
   });
 }
 
@@ -408,7 +429,7 @@ async function saveManagedUserAccess(uid) {
     if (statusElement) statusElement.textContent = '사용자 권한을 저장했습니다.';
   } catch (error) {
     console.error('사용자 권한 저장 실패:', error);
-    alert('사용자 권한을 저장하지 못했습니다. Firestore 규칙을 확인하세요.\n' + (error.message || error));
+    alert('사용자 권한을 저장하지 못했습니다. 관리자 설정과 네트워크 연결을 확인하세요.\n' + (error.message || error));
   }
 }
 
@@ -431,7 +452,7 @@ async function recheckApproval() {
     return true;
   } catch (error) {
     console.error('승인 상태 재확인 실패:', error);
-    setLoginStatus('승인 상태를 확인하지 못했습니다. 네트워크 연결과 Firestore 규칙을 확인하세요.', 'error');
+    setLoginStatus('승인 상태를 확인하지 못했습니다. 네트워크 연결과 관리자 설정을 확인하세요.', 'error');
     return false;
   }
 }
@@ -641,7 +662,7 @@ function updateAdminSiteCodeStatus(message = '') {
     element.textContent = message;
     return;
   }
-  const source = siteAccessConfig?.source === 'firestore' ? 'Firebase 설정' : '최초 배포 설정';
+  const source = siteAccessConfig?.source === 'firestore' ? '관리자 설정' : '기본 설정';
   element.textContent = siteAccessConfig?.enabled
     ? `현재 접속 코드 사용 중 · ${source} · 버전 ${siteAccessConfig.version}`
     : '현재 사이트 접속 코드를 사용하지 않습니다.';
@@ -679,13 +700,13 @@ async function saveSiteAccessCode() {
     updateAdminSecuritySummary();
   } catch (error) {
     console.error('접속 코드 저장 실패:', error);
-    alert('접속 코드를 저장하지 못했습니다. Firestore 보안 규칙을 확인하세요.\n' + (error.message || error));
+    alert('접속 코드를 저장하지 못했습니다. 관리자 설정과 네트워크 연결을 확인하세요.\n' + (error.message || error));
   }
 }
 
 async function disableSiteAccessCode() {
   if (!requireAdminAccess('사이트 접속 코드 해제')) return;
-  if (!confirm('사이트 접속 코드 확인을 사용하지 않도록 변경할까요? Firebase 로그인과 사용자 승인은 계속 유지됩니다.')) return;
+  if (!confirm('사이트 접속 코드 확인을 사용하지 않도록 변경할까요? 사용자 로그인과 승인 기능은 계속 유지됩니다.')) return;
   try {
     const now = new Date().toISOString();
     const version = `${Date.now()}`;

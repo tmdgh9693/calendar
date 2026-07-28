@@ -363,7 +363,7 @@ async function saveEvent() {
       ]);
     } catch (error) {
       console.error('일정 서버 저장 오류:', error);
-      alert('일정은 이 기기에 저장됐지만 서버 반영에는 실패했습니다. Firestore 규칙을 확인하세요.\n' + error.message);
+      alert('일정은 이 기기에 저장됐지만 온라인 반영에는 실패했습니다. 접근 권한과 네트워크 연결을 확인하세요.\n' + error.message);
       return;
     }
   }

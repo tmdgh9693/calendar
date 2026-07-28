@@ -612,7 +612,7 @@ async function deletePhotoVaultItem(key) {
       await deletePhotoVaultEverywhere(record);
     } catch (error) {
       console.error('사진 삭제 오류:', error);
-      alert('사진을 삭제하지 못했습니다. Firestore 권한과 네트워크 연결을 확인해 주세요.');
+      alert('사진을 삭제하지 못했습니다. 접근 권한과 네트워크 연결을 확인해 주세요.');
       return;
     }
   }
