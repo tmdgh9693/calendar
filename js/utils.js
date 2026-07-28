@@ -96,9 +96,6 @@ function load() {
   }
 
   if (window.SECURE_CLOUD_ONLY === true) {
-    // 일정과 문서 원문은 로컬에 남기지 않되, 현재 실행 중인 로그인 사용자 정보는 유지합니다.
-    // 이전에는 init()이 호출될 때마다 data.user와 data.uid까지 지워져
-    // 로그인 후에도 상단에 "미로그인"이 표시되는 문제가 있었습니다.
     data.users = [];
     data.events = [];
     data.docs = [];
