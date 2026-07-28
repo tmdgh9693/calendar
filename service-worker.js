@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calendar-secure-displayfix-20260728-v2';
+const CACHE_NAME = 'aton-calendar-signup-v1';
 const APP_FILES = [
   './css/archive.css',
   './css/backup.css',

@@ -357,7 +357,7 @@ body.site-code-locked .site-footer { display: none !important; }
 .admin-code-settings { flex: 0 0 auto; margin: 8px 0 12px; padding: 10px 12px; border: 1px solid #dbe3ec; border-radius: 12px; background: #f8fafc; }
 .admin-code-settings summary { cursor: pointer; font-weight: 800; color: #17365d; }
 .admin-code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.admin-user-toolbar { flex: 0 0 auto; display: grid; grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px) auto; gap: 10px; align-items: end; margin-bottom: 10px; }
+.admin-user-toolbar { flex: 0 0 auto; display: grid; grid-template-columns: minmax(150px, 220px) auto; gap: 10px; align-items: end; justify-content: start; margin-bottom: 10px; }
 .admin-user-toolbar label { margin: 0; }
 .admin-user-toolbar label > span { display: block; margin-bottom: 5px; font-size: 12px; color: #475569; }
 .admin-user-count { padding: 10px 12px; border-radius: 10px; background: #eff6ff; color: #1e3a8a; font-size: 13px; font-weight: 800; white-space: nowrap; }
@@ -375,4 +375,11 @@ body.modal-open { overflow: hidden; }
   .admin-user-count { white-space: normal; }
   .admin-user-list-scroll { max-height: 50vh; }
   .admin-security-modal .access-user-row { grid-template-columns: 1fr; }
+}
+
+.signup-modal-box { max-width: 620px; }
+.signup-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.signup-form-grid > div { min-width: 0; }
+@media (max-width: 620px) {
+  .signup-form-grid { grid-template-columns: 1fr; gap: 0; }
 }

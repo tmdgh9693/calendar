@@ -791,7 +791,7 @@ async function renderPhotoVault() {
   photoVaultStatus('사진 보관함에 연결하는 중입니다.');
   const user = await ensurePhotoVaultRealtime();
   if (!user) {
-    list.innerHTML = '<div class="photo-vault-empty">로그인 후 사진을 올려 주세요.<br>휴대폰과 컴퓨터에서 같은 이메일 계정으로 로그인해야 사진이 공유됩니다.</div>';
+    list.innerHTML = '<div class="photo-vault-empty">로그인 후 사진을 올려 주세요.<br>휴대폰과 컴퓨터에서 같은 계정으로 로그인해야 사진이 공유됩니다.</div>';
     photoVaultStatus('로그인이 필요합니다.');
     updatePhotoVaultSelectionUi();
     return;

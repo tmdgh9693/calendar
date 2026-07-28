@@ -3,6 +3,7 @@ let pendingLoginColor = '';
 let pendingLoginRank = '';
 let authStateStarted = false;
 let authProcessingToken = 0;
+let signupInProgress = false;
 
 function isEmailLike(value) {
   return /^\S+@\S+\.\S+$/.test(String(value || '').trim());
@@ -14,6 +15,130 @@ function requestedLoginProfile() {
     color: String(pendingLoginColor || $('loginColor')?.value || '#2563eb').trim() || '#2563eb',
     rank: String(pendingLoginRank || $('loginRank')?.value || '').trim()
   };
+}
+
+
+function setSignupStatus(message = '', tone = '') {
+  const element = document.getElementById('signupStatus');
+  if (!element) return;
+  element.textContent = String(message || '');
+  element.dataset.tone = tone || '';
+  element.classList.toggle('hidden', !message);
+}
+
+function openSignup() {
+  const modal = document.getElementById('signupModal');
+  if (!modal) return;
+
+  const loginName = document.getElementById('loginName')?.value || '';
+  const loginRank = document.getElementById('loginRank')?.value || '';
+  const loginEmail = document.getElementById('loginEmail')?.value || '';
+  const loginColor = document.getElementById('loginColor')?.value || '#2563eb';
+
+  if (document.getElementById('signupName')) document.getElementById('signupName').value = loginName;
+  if (document.getElementById('signupRank')) document.getElementById('signupRank').value = loginRank;
+  if (document.getElementById('signupEmail')) document.getElementById('signupEmail').value = loginEmail;
+  if (document.getElementById('signupColor')) document.getElementById('signupColor').value = loginColor;
+  if (document.getElementById('signupPassword')) document.getElementById('signupPassword').value = '';
+  if (document.getElementById('signupPasswordConfirm')) document.getElementById('signupPasswordConfirm').value = '';
+
+  setSignupStatus('', '');
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  setTimeout(() => document.getElementById('signupName')?.focus(), 60);
+}
+
+function closeSignup() {
+  const modal = document.getElementById('signupModal');
+  if (modal) modal.classList.add('hidden');
+
+  const anotherModalOpen = ['modal', 'adminSecurityModal', 'decisionModal']
+    .some(id => {
+      const element = document.getElementById(id);
+      return element && !element.classList.contains('hidden');
+    });
+  if (!anotherModalOpen) document.body.classList.remove('modal-open');
+}
+
+async function signup() {
+  await initializeFirebase();
+
+  if (!USE_FIREBASE || !auth) {
+    setSignupStatus('회원가입 서비스에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.', 'error');
+    return;
+  }
+
+  if (signupInProgress) return;
+
+  const name = String(document.getElementById('signupName')?.value || '').trim();
+  const rank = String(document.getElementById('signupRank')?.value || '').trim();
+  const email = String(document.getElementById('signupEmail')?.value || '').trim();
+  const password = String(document.getElementById('signupPassword')?.value || '');
+  const confirmPassword = String(document.getElementById('signupPasswordConfirm')?.value || '');
+  const color = String(document.getElementById('signupColor')?.value || '#2563eb').trim() || '#2563eb';
+
+  if (!name || isEmailLike(name)) {
+    setSignupStatus('이름을 정확히 입력해 주세요.', 'warning');
+    document.getElementById('signupName')?.focus();
+    return;
+  }
+  if (!email || !isEmailLike(email)) {
+    setSignupStatus('사용할 이메일 주소를 정확히 입력해 주세요.', 'warning');
+    document.getElementById('signupEmail')?.focus();
+    return;
+  }
+  if (password.length < 10) {
+    setSignupStatus('비밀번호는 10자 이상으로 입력해 주세요.', 'warning');
+    document.getElementById('signupPassword')?.focus();
+    return;
+  }
+  if (password !== confirmPassword) {
+    setSignupStatus('비밀번호 확인 값이 일치하지 않습니다.', 'warning');
+    document.getElementById('signupPasswordConfirm')?.focus();
+    return;
+  }
+
+  const button = document.getElementById('signupBtn');
+  signupInProgress = true;
+  if (button) button.disabled = true;
+  setSignupStatus('가입 신청을 처리하는 중입니다.', '');
+
+  try {
+    const credential = await auth.createUserWithEmailAndPassword(email, password);
+    const user = credential.user;
+
+    if (user && user.displayName !== name) {
+      await user.updateProfile({ displayName: name });
+    }
+
+    await ensureAccessRequest(user, { name, rank, color });
+
+    if (document.getElementById('loginName')) document.getElementById('loginName').value = name;
+    if (document.getElementById('loginRank')) document.getElementById('loginRank').value = rank;
+    if (document.getElementById('loginEmail')) document.getElementById('loginEmail').value = email;
+    if (document.getElementById('loginColor')) document.getElementById('loginColor').value = color;
+    if (document.getElementById('loginPassword')) document.getElementById('loginPassword').value = '';
+
+    setLoginStatus('회원가입이 완료되었습니다. 관리자 승인 후 로그인해 주세요.', 'success');
+    closeSignup();
+    await auth.signOut();
+    init();
+  } catch (error) {
+    console.error('회원가입 오류:', error);
+    const messages = {
+      'auth/email-already-in-use': '이미 사용 중인 이메일입니다. 로그인하거나 다른 이메일을 사용해 주세요.',
+      'auth/invalid-email': '이메일 주소 형식이 올바르지 않습니다.',
+      'auth/weak-password': '비밀번호가 너무 약합니다. 더 길고 복잡하게 입력해 주세요.',
+      'auth/operation-not-allowed': '현재 회원가입이 허용되지 않습니다. 관리자에게 문의해 주세요.',
+      'auth/admin-restricted-operation': '현재 회원가입이 제한되어 있습니다. 관리자에게 문의해 주세요.',
+      'auth/network-request-failed': '네트워크 연결을 확인한 뒤 다시 시도해 주세요.',
+      'auth/too-many-requests': '요청이 너무 많아 일시적으로 제한되었습니다. 잠시 후 다시 시도해 주세요.'
+    };
+    setSignupStatus(messages[error.code] || `회원가입을 완료하지 못했습니다: ${error.message}`, 'error');
+  } finally {
+    signupInProgress = false;
+    if (button) button.disabled = false;
+  }
 }
 
 async function readSavedNickname(user) {
@@ -198,7 +323,7 @@ async function login() {
     console.error('로그인 오류:', error);
 
     const messages = {
-      'auth/user-not-found': '등록되지 않은 계정입니다. 관리자에게 계정 등록을 요청하세요.',
+      'auth/user-not-found': '등록되지 않은 계정입니다. 회원가입을 진행하거나 관리자에게 문의하세요.',
       'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않거나 등록되지 않은 계정입니다.',
       'auth/wrong-password': '비밀번호가 올바르지 않습니다.',
       'auth/user-disabled': '사용이 중지된 계정입니다. 관리자에게 문의하세요.',
@@ -300,6 +425,7 @@ async function watchAuthState() {
     if (typeof stopOwnAccessWatch === 'function') stopOwnAccessWatch();
 
     if (user) {
+      if (signupInProgress) return;
       setLoginStatus('로그인과 승인 상태를 확인하는 중입니다.', '');
       await processSignedInUser(user, token);
       return;

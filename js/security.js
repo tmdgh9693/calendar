@@ -1,5 +1,6 @@
 'use strict';
 
+// 승인 사용자와 역할별 접근 권한을 관리합니다.
 window.REQUIRE_FIREBASE_APPROVAL = true;
 window.SECURE_CLOUD_ONLY = true;
 
@@ -17,6 +18,7 @@ const ACCESS_STATUS_LABELS = Object.freeze({
 
 let currentAccessProfile = null;
 let cloudAccessUsers = [];
+let renderedAdminUsers = [];
 let unsubAccessUsers = null;
 let unsubOwnAccess = null;
 let lastAccessMessage = '';
@@ -281,6 +283,7 @@ function stopAdminAccessWatch() {
   if (unsubAccessUsers) unsubAccessUsers();
   unsubAccessUsers = null;
   cloudAccessUsers = [];
+  renderedAdminUsers = [];
   renderAdminUserManagement();
 }
 
@@ -291,7 +294,7 @@ function startAdminAccessWatch() {
   unsubAccessUsers = db.collection('users').onSnapshot(snapshot => {
     cloudAccessUsers = snapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .sort((a, b) => String(a.name || a.email || '').localeCompare(String(b.name || b.email || ''), 'ko'));
+      .sort((a, b) => String(a.name || a.rank || '').localeCompare(String(b.name || b.rank || ''), 'ko'));
     renderAdminUserManagement();
   }, error => {
     console.error('사용자 권한 목록 불러오기 실패:', error);
@@ -300,20 +303,19 @@ function startAdminAccessWatch() {
   });
 }
 
-function accessUserRow(user) {
+function accessUserRow(user, rowIndex) {
   const uid = String(user.uid || user.id || '');
   const isSelf = uid === auth?.currentUser?.uid;
   const approved = user.approved === true;
   const role = normalizeAccessRole(user.role);
   const status = normalizeAccessStatus(user.status);
-  const safeUid = esc(uid);
+  const rankText = String(user.rank || '').trim() || '직급 미등록';
 
   return `
-    <div class="access-user-row" data-access-user="${safeUid}">
+    <div class="access-user-row" data-access-index="${rowIndex}">
       <div class="access-user-summary">
         <strong>${esc(user.name || '이름 미등록')}</strong>
-        <span>${esc(user.email || '')}</span>
-        <small>UID: ${safeUid}${isSelf ? ' · 현재 관리자' : ''}</small>
+        <small>${esc(rankText)}${isSelf ? ' · 현재 관리자' : ''}</small>
       </div>
       <label>
         <span>승인</span>
@@ -338,7 +340,7 @@ function accessUserRow(user) {
           <option value="suspended" ${status === 'suspended' ? 'selected' : ''}>이용 정지</option>
         </select>
       </label>
-      <button class="p access-save-button" type="button" onclick="saveManagedUserAccess('${safeUid}')" ${isSelf ? 'disabled' : ''}>권한 저장</button>
+      <button class="p access-save-button" type="button" onclick="saveManagedUserAccess(${rowIndex})" ${isSelf ? 'disabled' : ''}>권한 저장</button>
     </div>
   `;
 }
@@ -348,17 +350,13 @@ function renderAdminUserManagement() {
   if (!list) return;
 
   if (!isAdminUser()) {
+    renderedAdminUsers = [];
     list.innerHTML = '';
     return;
   }
 
-  const keyword = String(document.getElementById('adminUserSearch')?.value || '').trim().toLowerCase();
   const filter = String(document.getElementById('adminUserFilter')?.value || 'all');
-  const filtered = cloudAccessUsers.filter(user => {
-    const haystack = [user.name, user.email, user.uid, user.id, user.rank]
-      .map(value => String(value || '').toLowerCase()).join(' ');
-    if (keyword && !haystack.includes(keyword)) return false;
-
+  renderedAdminUsers = cloudAccessUsers.filter(user => {
     const status = normalizeAccessStatus(user.status);
     if (filter === 'pending' && status !== 'pending') return false;
     if (filter === 'active' && status !== 'active') return false;
@@ -368,32 +366,34 @@ function renderAdminUserManagement() {
   });
 
   const count = document.getElementById('adminUserCount');
-  if (count) count.textContent = `표시 ${filtered.length}명 · 전체 ${cloudAccessUsers.length}명`;
+  if (count) count.textContent = `표시 ${renderedAdminUsers.length}명 · 전체 ${cloudAccessUsers.length}명`;
 
-  list.innerHTML = filtered.length
-    ? filtered.map(accessUserRow).join('')
+  list.innerHTML = renderedAdminUsers.length
+    ? renderedAdminUsers.map((user, index) => accessUserRow(user, index)).join('')
     : '<p class="small empty-state">조건에 맞는 사용자가 없습니다.</p>';
   updateAdminSecuritySummary();
 }
 
-async function saveManagedUserAccess(uid) {
+async function saveManagedUserAccess(rowIndex) {
   if (!isAdminUser()) {
     alert('관리자만 사용자 권한을 변경할 수 있습니다.');
     return;
   }
 
+  const index = Number(rowIndex);
+  const user = Number.isInteger(index) ? renderedAdminUsers[index] : null;
+  const uid = String(user?.uid || user?.id || '');
   if (!uid || uid === auth?.currentUser?.uid) {
     alert('현재 로그인한 관리자 자신의 보안 권한은 이 화면에서 변경할 수 없습니다.');
     return;
   }
 
-  const row = document.querySelector(`[data-access-user="${CSS.escape(uid)}"]`);
+  const row = document.querySelector(`[data-access-index="${index}"]`);
   if (!row) return;
 
   const approved = row.querySelector('.access-approved')?.value === 'true';
   const role = normalizeAccessRole(row.querySelector('.access-role')?.value);
   const status = normalizeAccessStatus(row.querySelector('.access-status')?.value);
-  const user = cloudAccessUsers.find(item => String(item.uid || item.id) === uid);
   const now = new Date().toISOString();
 
   try {
@@ -472,7 +472,7 @@ function openAdminSecurityModal() {
   document.body.classList.add('modal-open');
   renderAdminUserManagement();
   updateAdminSiteCodeStatus();
-  setTimeout(() => document.getElementById('adminUserSearch')?.focus(), 50);
+  setTimeout(() => document.getElementById('adminUserFilter')?.focus(), 50);
 }
 
 function closeAdminSecurityModal() {
@@ -554,7 +554,7 @@ async function fetchSiteAccessConfig() {
     if (!snapshot.exists) return bootstrap;
     return normalizedSiteAccessConfig({ ...snapshot.data(), source: 'firestore' });
   } catch (error) {
-    console.warn('Firestore 접속 코드 설정을 읽지 못해 최초 배포 설정을 사용합니다:', error);
+    console.warn('접속 코드 설정을 읽지 못해 기본 설정을 사용합니다:', error);
     return bootstrap;
   }
 }

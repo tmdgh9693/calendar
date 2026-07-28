@@ -29,7 +29,7 @@ function loadExternalScript(src) {
 function withTimeout(promise, milliseconds) {
   return Promise.race([
     promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('연결 시간 초과')), milliseconds))
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase 연결 시간 초과')), milliseconds))
   ]);
 }
 
@@ -43,6 +43,6 @@ window.firebaseSdkReady = (async () => {
   ]), FIREBASE_LOAD_TIMEOUT_MS);
   return window.firebase;
 })().catch(error => {
-  console.warn('보안 로그인을 시작할 수 없습니다.', error);
+  console.warn('Firebase를 사용할 수 없어 보안 로그인을 시작할 수 없습니다.', error);
   return null;
 });

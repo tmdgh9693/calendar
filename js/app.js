@@ -143,6 +143,12 @@ document.addEventListener('keydown', event => {
     return;
   }
 
+  const signupModal = document.getElementById('signupModal');
+  if (signupModal && !signupModal.classList.contains('hidden') && typeof closeSignup === 'function') {
+    closeSignup();
+    return;
+  }
+
   const adminSecurityModal = document.getElementById('adminSecurityModal');
   if (adminSecurityModal && !adminSecurityModal.classList.contains('hidden') && typeof closeAdminSecurityModal === 'function') {
     closeAdminSecurityModal();
