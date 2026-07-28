@@ -1,0 +1,322 @@
+let auth = null;
+let db = null;
+
+let unsubEvents = null;
+let unsubDocs = null;
+let unsubTemplate = null;
+let unsubUsers = null;
+
+let syncReady = false;
+let USE_FIREBASE = false;
+let firebaseInitPromise = null;
+
+function hasFirebaseConfig() {
+  return !!(
+    window.firebaseConfig &&
+    window.firebaseConfig.apiKey &&
+    !String(window.firebaseConfig.apiKey).includes('여기에')
+  );
+}
+
+async function initializeFirebase() {
+  if (firebaseInitPromise) return firebaseInitPromise;
+
+  firebaseInitPromise = (async () => {
+    const sdk = await (window.firebaseSdkReady || Promise.resolve(window.firebase || null));
+    if (!sdk || !hasFirebaseConfig()) {
+      USE_FIREBASE = false;
+      return false;
+    }
+
+    if (!sdk.apps.length) sdk.initializeApp(window.firebaseConfig);
+    auth = sdk.auth();
+    db = sdk.firestore();
+
+    // 사용자가 브라우저를 닫았다가 다시 열어도 로그인 상태가 유지되도록
+    // Firebase 인증 정보를 로컬 지속성으로 저장합니다.
+    try {
+      await auth.setPersistence(sdk.auth.Auth.Persistence.LOCAL);
+    } catch (error) {
+      console.warn('로그인 상태 유지 설정 실패:', error);
+      throw new Error('로그인 상태 유지 설정에 실패했습니다. 브라우저 저장소 정책을 확인하세요.');
+    }
+
+    USE_FIREBASE = true;
+    return true;
+  })().catch(error => {
+    console.warn('Firebase 초기화 실패:', error);
+    USE_FIREBASE = false;
+    auth = null;
+    db = null;
+    return false;
+  });
+
+  return firebaseInitPromise;
+}
+
+function cleanForFirestore(obj) {
+  return JSON.parse(
+    JSON.stringify(obj, (key, value) => value === undefined ? null : value)
+  );
+}
+
+function assertCloudWriteAllowed() {
+  if (typeof canWriteData === 'function' && !canWriteData()) {
+    throw new Error('현재 계정은 자료를 변경할 권한이 없습니다.');
+  }
+}
+
+async function upsert(col, obj) {
+  if (!USE_FIREBASE || !db || !obj || !obj.id) return;
+  assertCloudWriteAllowed();
+
+  await db
+    .collection(col)
+    .doc(obj.id)
+    .set(cleanForFirestore(obj), { merge: true });
+}
+
+async function removeCloud(col, id) {
+  if (!USE_FIREBASE || !db || !id) return;
+  assertCloudWriteAllowed();
+
+  await db
+    .collection(col)
+    .doc(id)
+    .delete();
+}
+
+async function saveAllToCloud() {
+  if (!USE_FIREBASE || !auth || !auth.currentUser) return;
+  assertCloudWriteAllowed();
+
+  await Promise.all([
+    ...(data.events || []).map(event => upsert('events', event)),
+    ...(data.docs || []).map(doc => upsert('docs', doc))
+  ]);
+
+  if (data.hwpxTemplates && typeof isAdminUser === 'function' && isAdminUser()) {
+    await db
+      .collection('settings')
+      .doc('hwpxTemplates')
+      .set({
+        templates: cleanForFirestore(normalizeHwpxTemplates()),
+        updatedAt: new Date().toISOString(),
+        updatedByUid: auth.currentUser.uid
+      }, { merge: true });
+  }
+}
+
+async function ensureCloudUser(name, preferredColor = '', preferredRank = '') {
+  if (!USE_FIREBASE || !auth || !auth.currentUser) return;
+  if (typeof hasApprovedAccess === 'function' && !hasApprovedAccess()) return;
+
+  const userId = auth.currentUser.uid;
+  data.userColors = data.userColors || {};
+  data.userRanks = data.userRanks || {};
+
+  let cloudColor = '';
+  let cloudRank = '';
+  try {
+    const [userSnapshot, profileSnapshot] = await Promise.all([
+      db.collection('users').doc(userId).get(),
+      db.collection('profiles').doc(userId).get()
+    ]);
+    const userData = userSnapshot.data() || {};
+    const profileData = profileSnapshot.data() || {};
+    cloudColor = String(profileData.color || userData.color || '').trim();
+    cloudRank = String(profileData.rank || userData.rank || '').trim();
+    if (cloudRank) {
+      data.userRanks[userId] = cloudRank;
+      if (name) data.userRanks[name] = cloudRank;
+    }
+  } catch (error) {
+    console.warn('저장된 사용자 프로필을 불러오지 못했습니다:', error);
+  }
+
+  const localColor = String(data.userColors[userId] || data.userColors[name] || '').trim();
+  const inputColor = String($('userColor')?.value || '').trim();
+  const requestedColor = String(preferredColor || '').trim();
+  const color = requestedColor || cloudColor || localColor || inputColor || '#2563eb';
+  const rank = String(preferredRank || cloudRank || data.userRanks[userId] || data.userRanks[name] || '').trim();
+  const now = new Date().toISOString();
+
+  data.userColors[userId] = color;
+  if (name) data.userColors[name] = color;
+  data.userRanks[userId] = rank;
+  if (name) data.userRanks[name] = rank;
+  if ($('userColor')) $('userColor').value = color;
+  if ($('userRank')) $('userRank').value = rank;
+
+  const batch = db.batch();
+  batch.set(db.collection('users').doc(userId), {
+    uid: userId,
+    name,
+    email: auth.currentUser.email || '',
+    color,
+    rank,
+    updatedAt: now
+  }, { merge: true });
+  batch.set(db.collection('profiles').doc(userId), {
+    uid: userId,
+    name,
+    color,
+    rank,
+    updatedAt: now
+  }, { merge: true });
+  await batch.commit();
+}
+
+function realtimeError(label) {
+  return error => {
+    console.error(`${label} 실시간 동기화 오류:`, error);
+    if (error?.code === 'permission-denied') {
+      setLoginStatus?.('자료 접근 권한이 거부되었습니다. 관리자 승인과 Firestore 규칙을 확인하세요.', 'error');
+    }
+  };
+}
+
+function startRealtime() {
+  if (!USE_FIREBASE || !auth || !auth.currentUser) return;
+  if (typeof hasApprovedAccess === 'function' && !hasApprovedAccess()) return;
+
+  stopRealtime();
+
+  let personalEvents = [];
+  let deptEvents = [];
+
+  const mergeEvents = () => {
+    const merged = new Map();
+    [...deptEvents, ...personalEvents].forEach(event => merged.set(event.id, event));
+    const hidden = new Set((data.deletedEventIds || []).map(String));
+    data.events = [...merged.values()].filter(event => !hidden.has(String(event.id)));
+    render();
+  };
+
+  const unsubPersonal = db
+    .collection('events')
+    .where('ownerUid', '==', ownerKey())
+    .onSnapshot(snapshot => {
+      personalEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      mergeEvents();
+    }, realtimeError('개인 일정'));
+
+  const unsubDept = db
+    .collection('events')
+    .where('scope', '==', '과')
+    .onSnapshot(snapshot => {
+      deptEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      mergeEvents();
+    }, realtimeError('과 일정'));
+
+  unsubEvents = () => {
+    unsubPersonal();
+    unsubDept();
+  };
+
+  let personalDocs = [];
+  let deptDocs = [];
+
+  const mergeDocs = () => {
+    const merged = new Map();
+    [...deptDocs, ...personalDocs].forEach(doc => merged.set(doc.id, doc));
+    const hidden = new Set((data.deletedDocIds || []).map(String));
+    data.docs = [...merged.values()]
+      .filter(doc => !hidden.has(String(doc.id)))
+      .filter(doc => doc.docType !== 'tripDraft' && doc.docType !== 'tripDraftChunk')
+      .sort((a, b) => String(b.createdAt || b.date || '').localeCompare(String(a.createdAt || a.date || '')));
+    renderArchive();
+  };
+
+  const unsubMyDocs = db
+    .collection('docs')
+    .where('ownerUid', '==', ownerKey())
+    .onSnapshot(snapshot => {
+      personalDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      mergeDocs();
+    }, realtimeError('개인 보관자료'));
+
+  const unsubDeptDocs = db
+    .collection('docs')
+    .where('scope', '==', '과')
+    .onSnapshot(snapshot => {
+      deptDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      mergeDocs();
+    }, realtimeError('과 보관자료'));
+
+  unsubDocs = () => {
+    unsubMyDocs();
+    unsubDeptDocs();
+  };
+
+  unsubTemplate = db
+    .collection('settings')
+    .doc('hwpxTemplates')
+    .onSnapshot(doc => {
+      if (doc.exists) {
+        const shared = doc.data() || {};
+        const remoteTemplates = shared.templates || {
+          meeting: shared.meeting || [],
+          trip: shared.trip || []
+        };
+
+        if (typeof mergeHwpxTemplateLists === 'function') {
+          data.hwpxTemplates = mergeHwpxTemplateLists(data.hwpxTemplates, remoteTemplates);
+        } else {
+          data.hwpxTemplates = remoteTemplates;
+        }
+
+        if (typeof normalizeHwpxTemplates === 'function') normalizeHwpxTemplates();
+        localSave();
+      }
+
+      if (typeof renderHwpxTemplateStatus === 'function') renderHwpxTemplateStatus();
+    }, realtimeError('공용 HWPX 템플릿'));
+
+  unsubUsers = db.collection('profiles').onSnapshot(snapshot => {
+    const savedColors = { ...(data.userColors || {}) };
+    const savedRanks = { ...(data.userRanks || {}) };
+    data.users = [];
+    data.userColors = savedColors;
+    data.userRanks = savedRanks;
+
+    snapshot.docs.forEach(doc => {
+      const user = doc.data() || {};
+      if (user.name) data.users.push(user.name);
+      if (user.uid && user.rank) {
+        data.userRanks[user.uid] = user.rank;
+        if (user.name) data.userRanks[user.name] = user.rank;
+      }
+      if (user.uid && user.color) {
+        data.userColors[user.uid] = user.color;
+        if (user.name) data.userColors[user.name] = user.color;
+      }
+
+      if (auth.currentUser && user.uid === auth.currentUser.uid && $('userColor')) {
+        $('userColor').value = data.userColors[user.uid] || user.color || '#2563eb';
+        if ($('userRank')) $('userRank').value = data.userRanks[user.uid] || user.rank || '';
+      }
+    });
+
+    localSave();
+    render();
+  }, realtimeError('사용자 공개 프로필'));
+
+  syncReady = true;
+  if (typeof startAdminAccessWatch === 'function') startAdminAccessWatch();
+}
+
+function stopRealtime() {
+  if (typeof stopPhotoVaultRealtime === 'function') stopPhotoVaultRealtime();
+  if (unsubEvents) unsubEvents();
+  if (unsubDocs) unsubDocs();
+  if (unsubTemplate) unsubTemplate();
+  if (unsubUsers) unsubUsers();
+  if (typeof stopAdminAccessWatch === 'function') stopAdminAccessWatch();
+
+  unsubEvents = null;
+  unsubDocs = null;
+  unsubTemplate = null;
+  unsubUsers = null;
+  syncReady = false;
+}
