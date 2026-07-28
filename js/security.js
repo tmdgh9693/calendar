@@ -1,7 +1,5 @@
 'use strict';
 
-// 보안 강화 버전은 Firebase 승인 사용자를 기준으로만 동작합니다.
-// 내부망 단일 HTML 버전은 별도 파일로 유지하세요.
 window.REQUIRE_FIREBASE_APPROVAL = true;
 window.SECURE_CLOUD_ONLY = true;
 
