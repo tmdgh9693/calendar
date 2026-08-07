@@ -137,6 +137,39 @@ function setEventModalEditable(editable) {
   if (deleteButton) deleteButton.classList.toggle('hidden', !editable);
 }
 
+function canCreateTripReportFromEvent(event) {
+  return !!event?.id && ['출장', '점검', '공사'].includes(String(event.type || ''));
+}
+
+function updateEventTripShortcut(event = null) {
+  const button = $('openTripFromEventBtn');
+  if (!button) return;
+  const viewer = typeof isViewerUser === 'function' && isViewerUser();
+  const eligible = !viewer && canCreateTripReportFromEvent(event);
+  button.classList.toggle('hidden', !eligible);
+  button.dataset.eventId = eligible ? event.id : '';
+}
+
+function updateEventTripShortcutFromForm() {
+  const id = $('evId')?.value || '';
+  const event = id ? (data.events || []).find(item => item.id === id) : null;
+  const formType = $('evType')?.value || '';
+  // 유형을 수정 중이라면 저장 전 데이터로 출장복명을 만드는 혼동을 막습니다.
+  updateEventTripShortcut(event && formType === String(event.type || '') ? event : null);
+}
+
+function openTripFromCurrentEvent() {
+  if (typeof requireWriteAccess === 'function' && !requireWriteAccess('출장복명 작성')) return;
+  const id = $('openTripFromEventBtn')?.dataset?.eventId || $('evId')?.value || '';
+  if (!id) return;
+  closeModal();
+  if (typeof openTripFromCalendarEvent === 'function') {
+    openTripFromCalendarEvent(id);
+  } else {
+    alert('출장복명 화면 연결 기능을 불러오지 못했습니다.');
+  }
+}
+
 function openEvent(scope, date, id = '') {
   if (typeof isViewerUser === 'function' && isViewerUser()) return;
   if (!id && typeof requireWriteAccess === 'function' && !requireWriteAccess('일정 등록')) return;
@@ -156,6 +189,7 @@ function openEvent(scope, date, id = '') {
 
   $('evId').value = '';
   $('evType').value = '출장';
+  updateEventTripShortcut(null);
   $('evPerson').value = scope === '개인' ? data.user : '';
   $('evTitle').value = '';
   $('evPlace').value = '';
@@ -211,6 +245,7 @@ function fillEvent(event) {
   $('evResult').value = event.result || '';
   $('evPlan').value = event.plan || '';
   setEventCompletionField(event.scope, isTripReportCompleted(event), editable);
+  updateEventTripShortcut(event);
 
   setHM('evStart', event.startH ?? 9, event.startM ?? 0);
   setHM('evEnd', event.endH ?? 18, event.endM ?? 0);
@@ -440,6 +475,89 @@ async function deleteEvent() {
   alert('일정을 삭제했습니다.');
 }
 
+function eventOccursOnDate(event, date) {
+  if (!event || !date) return false;
+  const start = String(event.date || '');
+  const end = String(event.endDate || event.date || '');
+  return !!start && start <= date && end >= date;
+}
+
+let scheduleSelectedDate = today();
+
+function todayScheduleSort(a, b) {
+  const timeCompare = hm(a).localeCompare(hm(b));
+  if (timeCompare !== 0) return timeCompare;
+  return String(a?.title || '').localeCompare(String(b?.title || ''), 'ko');
+}
+
+function normalizeScheduleSelectedDate(value) {
+  const text = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : today();
+}
+
+function scheduleDateLabel(date) {
+  try {
+    return new Date(`${date}T00:00:00`).toLocaleDateString('ko-KR', {
+      month: 'long', day: 'numeric', weekday: 'short'
+    });
+  } catch (_) {
+    return date;
+  }
+}
+
+function setScheduleDate(value) {
+  scheduleSelectedDate = normalizeScheduleSelectedDate(value);
+  renderTodaySchedule();
+}
+
+function moveScheduleDay(direction) {
+  const base = new Date(`${normalizeScheduleSelectedDate(scheduleSelectedDate)}T00:00:00`);
+  base.setDate(base.getDate() + Number(direction || 0));
+  scheduleSelectedDate = localDate(base);
+  renderTodaySchedule();
+}
+
+function resetScheduleDateToday() {
+  scheduleSelectedDate = today();
+  renderTodaySchedule();
+}
+
+function todayScheduleLine(event, date) {
+  const time = hm(event);
+  const title = String(event?.title || '').trim() || '제목 없음';
+  const person = String(event?.person || '').trim();
+  const detail = person ? `${title} · ${person}` : title;
+  return `<button class="today-schedule-item" type="button" title="${esc(time + ' · ' + detail)}" onclick="openEvent('${esc(event.scope)}', '${esc(date)}', '${esc(event.id)}')"><span class="today-schedule-time">${esc(time)}</span><span class="today-schedule-title">${esc(detail)}</span></button>`;
+}
+
+function renderTodaySchedule() {
+  const personalEl = $('todayPersonalSchedule');
+  const deptEl = $('todayDeptSchedule');
+  if (!personalEl || !deptEl) return;
+
+  const viewer = typeof isViewerUser === 'function' && isViewerUser();
+  const date = normalizeScheduleSelectedDate(scheduleSelectedDate);
+  scheduleSelectedDate = date;
+  const source = viewer ? [] : (data.events || []);
+
+  const picker = $('scheduleDatePicker');
+  if (picker && picker.value !== date) picker.value = date;
+  const label = $('scheduleSidebarDateLabel');
+  if (label) label.textContent = scheduleDateLabel(date);
+
+  const personalEvents = source
+    .filter(event => event.scope === '개인' && mine(event) && eventOccursOnDate(event, date))
+    .sort(todayScheduleSort);
+
+  const deptEvents = source
+    .filter(event => event.scope === '과' && eventOccursOnDate(event, date))
+    .sort(todayScheduleSort);
+
+  const emptyHtml = '<div class="today-schedule-empty">일정 없음</div>';
+  personalEl.innerHTML = personalEvents.length ? personalEvents.map(event => todayScheduleLine(event, date)).join('') : emptyHtml;
+  deptEl.innerHTML = deptEvents.length ? deptEvents.map(event => todayScheduleLine(event, date)).join('') : emptyHtml;
+}
+
 let renderFrameId = 0;
 
 function activeTabId() {
@@ -472,6 +590,7 @@ function render(targetId = '') {
   if (renderFrameId) cancelAnimationFrame(renderFrameId);
   renderFrameId = requestAnimationFrame(() => {
     renderFrameId = 0;
+    renderTodaySchedule();
     renderActiveView(targetId || activeTabId());
   });
 }

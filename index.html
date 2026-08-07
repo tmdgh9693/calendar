@@ -14,7 +14,7 @@
 <link as="image" href="./icons/icon-192.png" rel="preload"/>
 <link as="image" href="./icons/icon-192.png" rel="preload"/>
 <link href="./manifest.webmanifest" rel="manifest"/>
-<link href="./css/style.css?v=20260728-displayfix1" rel="stylesheet"/>
+<link href="./css/style.css?v=20260807-sidebar-compact1" rel="stylesheet"/>
 <link href="./css/components.css?v=20260728-viewerlock2" rel="stylesheet"/>
 <link href="./css/calendar.css?v=20260721-10" rel="stylesheet"/>
 <link href="./css/meeting.css" rel="stylesheet"/>
@@ -143,7 +143,7 @@
 <div class="event-row event-row-two">
 <div class="event-field">
 <label for="evType">유형</label>
-<select id="evType">
+<select id="evType" onchange="updateEventTripShortcutFromForm()">
 <option>회의</option>
 <option>출장</option>
 <option>점검</option>
@@ -245,6 +245,7 @@
 </details>
 <div class="event-modal-actions">
 <button class="p" id="saveEventBtn" onclick="saveEvent()">저장</button>
+<button class="g hidden" id="openTripFromEventBtn" onclick="openTripFromCurrentEvent()" type="button">출장복명 작성</button>
 <button class="s" onclick="closeModal()">닫기</button>
 <button class="d" id="deleteEventBtn" onclick="deleteEvent()">삭제</button>
 </div>
@@ -355,6 +356,7 @@
 </div>
 </div>
 </nav>
+<div class="app-workspace">
 <main>
 
 <section class="tab" id="personal">
@@ -802,6 +804,34 @@
   </div>
 </section>
 </main>
+<aside class="schedule-sidebar no-print" id="todaySchedulePanel" aria-live="polite" aria-label="선택 날짜 일정">
+  <div class="schedule-sidebar-head">
+    <div>
+      <strong>일정</strong>
+      <span class="schedule-sidebar-date" id="scheduleSidebarDateLabel"></span>
+    </div>
+    <button class="schedule-today-button" type="button" onclick="resetScheduleDateToday()">오늘</button>
+  </div>
+  <div class="schedule-date-controls">
+    <button class="schedule-arrow" type="button" aria-label="이전 날짜" onclick="moveScheduleDay(-1)">◀</button>
+    <input id="scheduleDatePicker" class="schedule-date-picker" type="date" aria-label="일정 날짜 선택" onchange="setScheduleDate(this.value)"/>
+    <button class="schedule-arrow" type="button" aria-label="다음 날짜" onclick="moveScheduleDay(1)">▶</button>
+  </div>
+  <section class="today-schedule-group">
+    <div class="today-schedule-label">개인일정</div>
+    <div class="today-schedule-items" id="todayPersonalSchedule">
+      <div class="today-schedule-empty">일정 없음</div>
+    </div>
+  </section>
+  <div class="today-schedule-divider" aria-hidden="true"></div>
+  <section class="today-schedule-group">
+    <div class="today-schedule-label">전체 일정</div>
+    <div class="today-schedule-items" id="todayDeptSchedule">
+      <div class="today-schedule-empty">일정 없음</div>
+    </div>
+  </section>
+</aside>
+</div>
 <footer class="site-footer no-print">
 <div class="footer-inner">
 <div aria-label="하단 메뉴" class="footer-nav">
@@ -826,12 +856,12 @@
 <script src="./js/firebase.js?v=20260728-viewerlock2"></script>
 <script src="./js/security.js?v=20260728-viewerlock2"></script>
 <script src="./js/auth.js?v=20260728-viewerlock2"></script>
-<script src="./js/calendar.js?v=20260728-viewerlock2"></script>
+<script src="./js/calendar.js?v=20260807-sidebar-compact1"></script>
 <script src="./js/monthly-schedule.js?v=20260728-viewerlock2"></script>
 <script src="./js/meeting/meeting-core.js"></script>
 <script src="./js/meeting/meeting-ui.js?v=20260728-viewerlock2"></script>
 <script src="./js/trip/trip-core.js?v=20260721-1"></script>
-<script src="./js/trip/trip-search.js?v=20260721-6"></script>
+<script src="./js/trip/trip-search.js?v=20260807-sidebar-compact1"></script>
 <script src="./js/trip/trip-photos.js?v=20260721-1"></script>
 <script src="./js/trip/trip-drafts.js?v=20260721-3"></script>
 <script src="./js/trip/trip-report.js?v=20260728-viewerlock2"></script>

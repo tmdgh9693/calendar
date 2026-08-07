@@ -24,7 +24,8 @@ function tripSearchText(event) {
     event.type,
     event.summary,
     event.result,
-    event.plan
+    event.plan,
+    ...(Array.isArray(event.people) ? event.people.flatMap(person => [person?.rank, person?.name]) : [])
   ]
     .filter(Boolean)
     .join(' ')
@@ -75,15 +76,102 @@ function renderTripSearchResults(events, query) {
       : '');
 }
 
-function loadTripById(id) {
-  const select = $('tripSelect');
-  if (select) select.value = id;
-  loadTrip();
+function tripLinkedDeptEvent(event) {
+  if (!event) return null;
+  if (event.scope === '과') return event;
+  return (data.events || []).find(item => item.scope === '과' && item.sourceId === event.id) || null;
+}
 
+function tripSnapshotFromCalendarEvent(event) {
+  const linkedDept = tripLinkedDeptEvent(event);
+  const people = Array.isArray(event?.people)
+    ? event.people.map(person => ({
+        rank: String(person?.rank || ''),
+        name: String(person?.name || '')
+      })).filter(person => person.rank || person.name)
+    : [];
+
+  const eventPhotos = Array.isArray(event?.tripPhotos)
+    ? event.tripPhotos.filter(photo => photo && photo.data).map(photo => ({
+        data: photo.data,
+        cap: photo.cap || '',
+        original: photo.original || dataBytes(photo.data),
+        compressed: photo.compressed || dataBytes(photo.data)
+      }))
+    : [];
+
+  return {
+    currentTripEventTitle: String(event?.title || event?.summary || '').trim(),
+    // 개인 일정은 연결된 과 일정이 있을 때만 그 ID를 사용합니다.
+    // 과 반영이 없는 개인 일정은 빈 ID로 두어 출장복명 저장 시 개인 일정을 덮어쓰지 않게 합니다.
+    currentTripCalendarEventId: event?.scope === '과' ? (event.id || '') : (linkedDept?.id || ''),
+    date: event?.date || today(),
+    endDate: event?.endDate || event?.date || today(),
+    reportDate: event?.date || today(),
+    startH: event?.startH ?? 9,
+    startM: event?.startM ?? 0,
+    endH: event?.endH ?? 18,
+    endM: event?.endM ?? 0,
+    rank: typeof rankForUserName === 'function' ? rankForUserName(event?.person || '') : '',
+    person: event?.person || data.user || '',
+    place: event?.place || '',
+    purpose: event?.summary || event?.title || '',
+    body: event?.result || '',
+    plan: event?.plan || '',
+    people,
+    photos: eventPhotos
+  };
+}
+
+function applyCalendarEventToTrip(event) {
+  if (!event) return false;
+  if (typeof setTripEditMode === 'function') setTripEditMode('', '');
+  const snapshot = tripSnapshotFromCalendarEvent(event);
+  if (typeof applyTripSnapshot === 'function') {
+    applyTripSnapshot(snapshot);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+function loadTripById(id) {
   const selected = (data.events || []).find(item => item.id === id);
+  if (!selected) return;
+
+  const select = $('tripSelect');
+  if (select && [...select.options].some(option => option.value === id)) select.value = id;
+  applyCalendarEventToTrip(selected);
 
   if ($('tripSearch')) $('tripSearch').value = '';
   tripOptions();
+
+  const target = $('tDate');
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => target.focus({ preventScroll: true }), 250);
+  }
+}
+
+function openTripFromCalendarEvent(id) {
+  if (typeof requireWriteAccess === 'function' && !requireWriteAccess('출장복명 작성')) return;
+  const event = (data.events || []).find(item => item.id === id);
+  if (!event) {
+    alert('선택한 일정을 찾지 못했습니다.');
+    return;
+  }
+  if (!['출장', '점검', '공사'].includes(String(event.type || ''))) {
+    alert('출장·점검·공사 일정에서 출장복명서를 작성할 수 있습니다.');
+    return;
+  }
+
+  tab('trip', document.querySelector('[data-tab="trip"]'), { instant: true });
+  if ($('tripSearch')) $('tripSearch').value = '';
+  tripOptions();
+  applyCalendarEventToTrip(event);
+
+  const select = $('tripSelect');
+  if (select && [...select.options].some(option => option.value === event.id)) select.value = event.id;
 
   const target = $('tDate');
   if (target) {
@@ -157,37 +245,9 @@ function tripOptions() {
 }
 
 function loadTrip() {
-  if (typeof setTripEditMode === 'function') setTripEditMode('', '');
   const selectedId = $('tripSelect') ? $('tripSelect').value : '';
   const event = (data.events || []).find(item => item.id === selectedId);
   if (!event) return;
-
-  currentTripEventTitle = String(event.title || event.summary || '').trim();
-  // 선택한 과 일정을 출장복명 완료 표시와 직접 연결합니다.
-  currentTripCalendarEventId = event.id || '';
-
-  if ($('tDate')) $('tDate').value = event.date || today();
-  if ($('tEndDate')) $('tEndDate').value = event.endDate || event.date || today();
-  if ($('tReportDate')) $('tReportDate').value = event.date || today();
-  if ($('tStartH')) $('tStartH').value = event.startH ?? 9;
-  if ($('tStartM')) $('tStartM').value = event.startM ?? 0;
-  if ($('tEndH')) $('tEndH').value = event.endH ?? 18;
-  if ($('tEndM')) $('tEndM').value = event.endM ?? 0;
-  if ($('tPerson')) $('tPerson').value = event.person || data.user || '';
-  if ($('tPlace')) $('tPlace').value = event.place || '';
-  if ($('tPurpose')) $('tPurpose').value = event.summary || event.title || '';
-  if ($('tBody')) $('tBody').value = event.result || '';
-  if ($('tPlan')) $('tPlan').value = event.plan || '';
-
-  photos = Array.isArray(event.tripPhotos)
-    ? event.tripPhotos.filter(photo => photo && photo.data).map(photo => ({
-        data: photo.data,
-        cap: photo.cap || '',
-        original: photo.original || dataBytes(photo.data),
-        compressed: photo.compressed || dataBytes(photo.data)
-      }))
-    : [];
-  renderPhotos({ save: false });
-  saveTripDraft();
+  applyCalendarEventToTrip(event);
 }
 
